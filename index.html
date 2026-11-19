@@ -1,0 +1,3465 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skarb Piramidy – wersja 0.43</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1b2a; font-family: "Segoe UI", system-ui, sans-serif; color: #f1f3ff; }
+  canvas { display: block; }
+  #timer {
+    position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none;
+    font-size: 30px; font-weight: 900; padding: 4px 14px; border-radius: 12px;
+    background: rgba(10, 20, 35, .8); border: 2px solid #9fd0ff; white-space: nowrap; display: none;
+  }
+  #timer.hot { color: #ff6b6b; border-color: #ff6b6b; }
+  .tag {
+    position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none;
+    font-size: 13px; font-weight: 800; padding: 1px 7px; border-radius: 8px; color: #fff; white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  }
+  #panel {
+    position: fixed; top: 14px; left: 14px; width: 270px; background: rgba(12, 22, 38, .88);
+    border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 12px 14px;
+  }
+  #panel h1 { margin: 0 0 2px; font-size: 18px; }
+  #panel .sub { font-size: 12px; color: #9fd0ff; margin-bottom: 10px; }
+  .pl { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-top: 1px solid rgba(255,255,255,.07); font-size: 14px; }
+  .pl .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .pl .keys { font-size: 11px; color: #aab3dd; }
+  .pl .st { margin-left: auto; font-size: 12px; text-align: right; }
+  #log { position: fixed; left: 14px; bottom: 14px; font-size: 14px; line-height: 1.6; text-shadow: 0 1px 3px #000; }
+  #divider { position: fixed; top: 0; bottom: 0; left: 50%; width: 4px; margin-left: -2px; background: #0d1b2a; display: none; }
+  #eightHud { position: fixed; top: 14px; right: 14px; width: 270px; background: rgba(12, 22, 38, .88); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 12px 14px; font-size: 15px; display: none; margin-top: 30px; }
+  #eightHud .sub { font-size: 13px; color: #c2cbe8; margin-top: 6px; }
+  #eightHud .turnline { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 16px; }
+  #eightHud .dot { width: 14px; height: 14px; border-radius: 50%; }
+  #billiard { position: fixed; bottom: 18px; left: 75%; transform: translateX(-50%); width: 444px; max-width: 46vw; display: none; z-index: 4; border-radius: 18px; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+  .qbtn { padding: 6px 12px; border-radius: 9px; border: 1px solid #556; background: #22304a; color: #d6dbf7; font-weight: 700; cursor: pointer; margin: 0 3px; }
+  .qbtn.on { background: #3f7ad6; color: #fff; border-color: #9cc3ff; }
+  #choiceBox { position: fixed; bottom: 24px; left: 75%; transform: translateX(-50%); background: rgba(12, 22, 38, .94); border: 2px solid #ffe066; border-radius: 16px; padding: 12px 16px; text-align: center; display: none; z-index: 5; }
+  .cbtns { display: flex; gap: 10px; margin-top: 8px; }
+  .cbtns button { background: #1d3150; color: #fff; border: 2px solid #4a6490; border-radius: 12px; padding: 10px 14px; font-size: 16px; font-weight: 800; cursor: pointer; }
+  .cbtns button:hover { border-color: #ffe066; }
+  .cbtns span { font-size: 12px; font-weight: 400; color: #c2cbe8; }
+  #toast { position: fixed; top: 22%; left: 75%; transform: translate(-50%, -20px) scale(.9); font-size: 38px; font-weight: 900; padding: 10px 26px; border-radius: 16px; background: rgba(10,18,30,.85); border: 2px solid currentColor; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; white-space: nowrap; z-index: 6; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #ver { position: fixed; right: 14px; top: 12px; font-size: 12px; color: #9fd0ff; background: rgba(12,22,38,.8); padding: 4px 8px; border-radius: 8px; }
+  .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(5, 12, 22, .7); z-index: 10; }
+  .inp { padding: 10px 12px; font-size: 16px; border-radius: 10px; border: 2px solid #4a6490; background: #0f1a2c; color: #fff; outline: none; }
+  .inp:focus { border-color: #9fd0ff; }
+  .netbox { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 12px 14px; margin: 12px 0; }
+  .netrow { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+  .nbtn { padding: 10px 18px; font-size: 16px; font-weight: 800; border: 0; border-radius: 10px; color: #fff; cursor: pointer; background: linear-gradient(180deg, #4f8df5, #2f63d0); }
+  .bigcode { font-size: 40px; font-weight: 900; letter-spacing: 8px; background: #0f1a2c; border: 2px dashed #6a8ac8; border-radius: 12px; padding: 6px; margin: 6px 0 10px; user-select: all; }
+  #netList div { display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 4px 0; border-radius: 8px; background: rgba(255,255,255,.06); text-align: left; }
+  #netList .dot { width: 14px; height: 14px; border-radius: 50%; }
+  .card { background: #142338; border: 1px solid rgba(255,255,255,.15); border-radius: 20px; padding: 28px 34px; text-align: center; max-width: 560px; max-height: 95vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .card h2 { margin: 0 0 4px; font-size: 36px; }
+  .card p { color: #c2cbe8; }
+  .choices { display: flex; gap: 10px; justify-content: center; margin: 14px 0 18px; }
+  .choices button { width: 60px; height: 60px; font-size: 24px; font-weight: 800; border-radius: 14px; border: 2px solid #4a6490; background: #1b2c48; color: #fff; cursor: pointer; }
+  .choices button.sel { background: #2f78c8; border-color: #9fd0ff; }
+  .big { padding: 13px 34px; font-size: 20px; font-weight: 800; border: 0; border-radius: 12px; color: #fff; cursor: pointer; background: linear-gradient(180deg, #52d17a, #2ea457); box-shadow: 0 6px 0 #1e7a3c; }
+  table { margin: 0 auto; border-collapse: collapse; font-size: 14px; }
+  td { padding: 4px 10px; text-align: left; }
+  .rules { text-align: left; font-size: 14px; line-height: 1.7; color: #d6dbf7; margin-top: 14px; }
+  .rules h3 { margin: 12px 0 4px; font-size: 16px; color: #ffd9a0; }
+  ol { text-align: left; font-size: 18px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div id="ver">Skarb Piramidy · v0.43 · etapy 1–3</div>
+<div id="panel">
+  <h1>🏝️ Gracze</h1>
+  <div class="sub">Na wyspie: walcz o statek (kursuje co 14 s, zabiera 1 osobę). Na ósemce: rzucasz kostką klawiszem ataku, drogę wybierasz klawiszami lewo/prawo. Na piramidzie: idziesz do schodów i wspinasz się na szczyt – uważaj na tłoki, lawę i rekina. Na szczycie: kopiesz albo rzucasz i szukasz skarbu.</div>
+  <div id="players"></div>
+</div>
+<div id="log"></div>
+<div id="divider"></div>
+<div id="eightHud"></div>
+<div id="choiceBox"></div>
+<canvas id="billiard" width="444" height="244"></canvas>
+<div id="toast"></div>
+<div id="timer">⛵ 15</div>
+
+<div class="screen" id="startScreen">
+  <div class="card">
+    <h2>Skarb Piramidy</h2>
+    <div style="color:#9fd0ff">wersja 0.43 · wyspa → ósemka → piramida</div>
+    <p>Walczcie o miejsce na statku. Statek kursuje co 14 sekund i zabiera tylko jedną osobę – kto pierwszy dopłynie, ten pierwszy zaczyna grę na ósemce. Z ósemki teleport przenosi na róg piramidy: wspinasz się po 5 piętrach, omijając tłoki, lawę z wulkanów i rekina w wodzie. Na szczycie pod jednym z 16 pól ukryty jest skarb – kto go wykopie, wygrywa.</p>
+    <div class="netbox">
+      <div id="netMain">
+        <b>🌐 Gra online ze znajomymi</b>
+        <div class="netrow"><input id="netNick" class="inp" placeholder="Twoje imię" maxlength="12"></div>
+        <div class="netrow"><button class="nbtn" id="netHostBtn">Utwórz pokój</button>
+          <input id="netCodeIn" class="inp" placeholder="KOD" maxlength="5" style="width:110px;text-transform:uppercase;letter-spacing:3px;text-align:center">
+          <button class="nbtn" id="netJoinBtn">Dołącz</button></div>
+        <div id="netMsg" style="min-height:18px;margin-top:6px;color:#ffb3b3;font-size:14px"></div>
+        <div style="font-size:12px;color:#aab3dd">Online każdy steruje swoją postacią: W A S D albo strzałki + Spacja / Enter.</div>
+      </div>
+      <div id="netLobby" style="display:none">
+        <div>Kod pokoju – podaj go znajomym:</div>
+        <div id="netRoomCode" class="bigcode">…</div>
+        <div id="netList"></div>
+        <div id="netLobbyMsg" style="min-height:18px;margin:6px 0;color:#c2cbe8;font-size:14px"></div>
+        <button class="big" id="netBegin" style="display:none">Rozpocznij grę</button>
+        <div><button id="netLeave" style="background:none;border:0;color:#9aa3d6;text-decoration:underline;cursor:pointer;margin-top:8px">← Wyjdź</button></div>
+      </div>
+    </div>
+    <div id="localPart">
+    <div>🖥️ Gra na jednym komputerze – liczba graczy:</div>
+    <div class="choices" id="choices">
+      <button data-n="2" class="sel">2</button><button data-n="3">3</button><button data-n="4">4</button>
+    </div>
+    <table id="ctrlTable"></table>
+    <p><button class="big" id="startBtn">START</button></p>
+    </div>
+    <div class="rules">
+      <h3>🏝️ Wyspa</h3>
+      ⚔️ <b>Atak</b> odpycha przeciwnika – możesz go zrzucić ze statku albo z wyspy do wody.<br>
+      🌊 Kto wpadnie do wody, traci 3 sekundy i wraca na środek wyspy.<br>
+      ⛵ Statek czeka 7 s, zabiera gracza stojącego na pokładzie i wraca – cały kurs trwa 14 s. Gdy na wyspie nikogo już nie ma, statek zostaje przy pomoście.<br>
+      🛒 Strefa bezpieczna (zielone koło) – nikt cię tam nie uderzy. Jest w niej sklep: stań na polu z towarem i naciśnij atak. 🪵 Łopata drewniana 40 💰 (2 użycia), ⛏️ żelazna 100 💰 (5 użyć), ❄️ zamrażacz tłoków 35 💰, 💧 pistolet na lawę 35 💰 – można kupić kilka sztuk.<br>
+      ⏳ Dopóki ktoś jest jeszcze na wyspie: na ósemce następny rzut 4 s po poprzednim, na piramidzie 2 s przerwy po ruchu.
+      <h3>➰ Ósemka</h3>
+      🎱 Zamiast rzutu kostką grasz w bilard: kostka leży na stole, klawiszami lewo/prawo celujesz (góra/dół – dokładniej), przytrzymujesz atak, żeby nabrać siły, i puszczasz, żeby uderzyć. Otwarte są tylko 2 losowe dziury (złota obwódka), na stole stoją 3 przeszkody, a im mocniej uderzysz, tym bardziej drży kij. Za szybka kostka przeskakuje nad dziurą – trzeba trafić z wyczuciem. Kostka wpadnie do otwartej dziury → idziesz 12 pól, inaczej tyle, ile oczek pokaże po zatrzymaniu. Na STARCIE i na środku wybierasz drogę klawiszem lewo/prawo: krótszą (11 pól, 3 rośliny 🌿) albo dłuższą (18 pól, 2 rośliny).<br>
+      🚩 Środek to checkpoint – kto go dotknie, ten po zjedzeniu albo polu ↺ wraca na środek, a -3 nie cofa go za środek.<br>
+      🌿 Każda roślina ma dwa pola (X i X+2) i co rundę gryzie na zmianę jedno z nich – czerwone kółko pokazuje które. Runda kończy się, gdy każdy gracz rzuci. Kto wejdzie na gryzione pole, zostaje zjedzony od razu (pole specjalne nie działa).<br>
+      🔴 -3 · 🟢 +2 · 🟡 ↺ powrót (na start albo checkpoint) · 🟣 dodatkowy rzut · 🔵 nic się nie dzieje – rozstawiane losowo w każdej grze.<br>
+      💰 Na końcu ósemki wybierasz: 100 monet (wracasz na wyspę do sklepu i znów płyniesz statkiem – ósemkę możesz robić, ile chcesz) albo wejście na piramidę.<br>
+      🌀 Wchodząc na piramidę, wybierasz róg: lewy dolny (klawisz lewo) albo prawy górny (klawisz prawo).
+      <h3>🔺 Piramida</h3>
+      🧗 Piramida ma 5 pięter. Idziesz zgodnie z ruchem wskazówek zegara do szarych schodów i wspinasz się piętro po piętrze.<br>
+      🟥🟩 Pola −1 / −2 / −3 cofają, +1 / +2 przesuwają do przodu. Na każdej ścianie jest ich kolejno 4 / 4 / 3 / 2 / 1 (piętra 1–5), rodzaj losowany w każdej grze – każdy rodzaj co najmniej raz na piętrze. Minus nigdy nie prowadzi na tłok, a w 6 polach z rzędu są najwyżej 3 „złe” pola (minus albo tłok).<br>
+      🟪 🎲 Dodatkowy rzut: po jednym na każdej ścianie pięter 1–4.<br>
+      🟨 ❓ Pole ze znakiem zapytania – po jednym na każdym piętrze: losuje od −5 do +5 pól (może wypaść 0).<br>
+      ❄️ Zamrażacz: gdy staniesz na tłoku, możesz go zamrozić – w tej rundzie cię nie zepchnie. 💧 Pistolet na lawę: gdy lawa zablokuje ci drogę, a masz jeszcze ruch, podchodzisz i gasisz ją wodą, a potem idziesz dalej.<br>
+      ⚙️ Tłoki (żółto‑czarne pola): po 2 na każdej ścianie pięter 1–4 i po 1 na 5. piętrze, nigdy jeden nad drugim. Na koniec rundy spychają stojącego piętro niżej – z parteru do wody (1–2 tury pływania do drabinki w rogu).<br>
+      🦈 Wokół piramidy pływa rekin – co rundę przy innej ścianie. Kto spadnie do wody przy jego ścianie, zostaje zjedzony: rekin trzyma go 1 turę, potem wypluwa, a gracz płynie do drabinki.<br>
+      🤸 Po wodzie pływa trampolina (co rundę o pole dalej). Kto zostanie zepchnięty tłokiem prosto na nią, wylatuje na losowe piętro 1–3 po tej samej stronie piramidy.<br>
+      🌋 Wulkany wybuchają od razu, gdy pierwszy gracz wyląduje na piramidzie, a potem co 4 rundy (2 graczy), 6 (3 graczy) albo 8 (4 graczy) – strzelają wszystkie 4, każdy na swoją ćwiartkę. Lawa blokuje drogę i przy każdym rzucie kostką spływa strumieniem piętro niżej, aż spłynie do wody. Kto stoi tam, gdzie spada albo spływa, cofa się o pole.
+      <h3>🏆 Szczyt i skarb</h3>
+      Na szczycie jest 16 pól, pod jednym (nie wiadomo którym) leży skarb. Wejście na szczyt kończy ruch – chyba że masz łopatę: wtedy możesz kopać od razu (zużywa 1 użycie, najpierw drewniane). W każdej kolejnej turze wybierasz: ⛏ kopiesz w miejscu, w którym stoisz, albo 🎲 rzucasz i przechodzisz na inne pole w zasięgu rzutu (kopać możesz dopiero w następnej turze). Kto wejdzie na innego gracza, spycha go o pole dalej – albo ze szczytu na 5. piętro. Kto wykopie skarb, wygrywa!
+      <h3>🖱️ Kamera</h3>
+      Planszę obracasz przeciągając myszą, kółko przybliża, dwuklik przywraca widok. Napisy na polach obracają się razem z kamerą.
+    </div>
+    <p style="margin-top:14px">🖥️ Grafika:
+      <button class="qbtn" data-q="low">Niska (najszybsza)</button><button class="qbtn" data-q="med">Średnia</button><button class="qbtn" data-q="high">Wysoka</button></p>
+    <p><button id="skipPyrBtn" style="padding:8px 16px;border-radius:10px;border:2px dashed #ffb347;background:#2a2238;color:#ffd9a0;font-weight:700;cursor:pointer">🔺 Test: od razu piramida</button></p>
+  </div>
+</div>
+
+<div class="screen" id="endScreen" style="display:none">
+  <div class="card">
+    <h2 id="winTitle">Skarb zdobyty!</h2>
+    <p>Gratulacje! 🎉</p>
+    <button class="big" id="againBtn">Zagraj jeszcze raz</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { Water } from 'three/addons/objects/Water.js';
+
+// ============================================================
+// USTAWIENIA
+// ============================================================
+const BOAT_INTERVAL = 7;       // ile sekund statek czeka przy wyspie (cały cykl tam i z powrotem = 14 s)
+const SPEED = 6;               // prędkość biegu
+const HIT_RANGE = 1.8;         // zasięg broni
+const HIT_FORCE = 13;          // siła odepchnięcia
+const ISLAND_R = 9;
+const WATER_TIME = 3;          // ile sekund traci gracz w wodzie
+const DOCK = { x0: -1.05, x1: 1.05, z0: ISLAND_R - 0.8, z1: ISLAND_R + 5.7 };
+const BOAT_POS = new THREE.Vector3(0, 0, ISLAND_R + 7.3);
+const BOAT_HALF = { w: 1.45, l: 2.15 };
+const SAIL_TIME = 3.2;               // ile sekund statek płynie w jedną stronę
+const UNLOAD_TIME = 0.6;             // postój przy ósemce
+
+const PLAYER_DEFS = [
+  { name: 'Gracz 1', color: '#e04848', keys: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], hit: ['Space'] }, label: 'W A S D', hitLabel: 'Spacja' },
+  { name: 'Gracz 2', color: '#4a86f2', keys: { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], hit: ['Enter', 'NumpadEnter'] }, label: 'Strzałki', hitLabel: 'Enter' },
+  { name: 'Gracz 3', color: '#45c867', keys: { up: ['KeyI'], down: ['KeyK'], left: ['KeyJ'], right: ['KeyL'], hit: ['KeyU'] }, label: 'I J K L', hitLabel: 'U' },
+  { name: 'Gracz 4', color: '#f0b030', keys: { up: ['Numpad8'], down: ['Numpad5'], left: ['Numpad4'], right: ['Numpad6'], hit: ['Numpad0'] }, label: 'Num 8 4 5 6', hitLabel: 'Num 0' },
+];
+const PALMS = [[-3.6, -2.4], [3.9, -1.2], [-4.2, 2.6], [5.4, 4.4]];
+const ROCKS = [[3.4, 3.2, 0.7], [-5.6, 4.6, 0.6]];
+
+// ============================================================
+// SCENA
+// ============================================================
+// jakość grafiki (wybierana na ekranie startowym, zapamiętywana w przeglądarce)
+const QUALITY = (() => { try { return localStorage.getItem('skarbQuality') || 'med'; } catch (e) { return 'med'; } })();
+const renderer = new THREE.WebGLRenderer({ antialias: QUALITY !== 'low', powerPreference: 'high-performance' });
+renderer.setPixelRatio(QUALITY === 'high' ? Math.min(devicePixelRatio, 1.5) : QUALITY === 'med' ? Math.min(devicePixelRatio, 1.25) : 0.85);
+// filtrowanie anizotropowe: napisy na polach widziane pod kątem zostają ostre (prawie nic nie kosztuje)
+const MAX_ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() || 1 : 1);
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = QUALITY !== 'low';
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#8fc8ee');
+scene.fog = new THREE.Fog('#8fc8ee', 90, 260);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(0, 18, -17);
+camera.lookAt(0, 0, 5);
+
+scene.add(new THREE.HemisphereLight('#e6f3ff', '#5a7040', 0.7));
+const sun = new THREE.DirectionalLight('#fff4e0', 2.4);
+sun.position.set(2, 42, 8);
+sun.castShadow = true;
+sun.shadow.mapSize.set(QUALITY === 'high' ? 2048 : 1024, QUALITY === 'high' ? 2048 : 1024);
+Object.assign(sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 160 });
+sun.shadow.camera.position.copy(sun.position);
+sun.target.position.set(22, 0, 25);
+scene.add(sun, sun.target);
+
+const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...o });
+
+// Woda – realistyczna: odbicia, fale i połysk słońca (mapa fal generowana w przeglądarce)
+function makeWaterNormals() {
+  const N = 256, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N);
+  const waves = [];
+  for (let k = 0; k < 14; k++) waves.push([1 + Math.floor(Math.random() * 7), Math.floor(Math.random() * 7) - 3, Math.random() * 6.28, 0.6 / (1 + k * 0.25)]);
+  const h = (x, y) => waves.reduce((s, [fx, fy, ph, a]) => s + a * Math.sin(6.2832 * (fx * x + fy * y) / N + ph), 0);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const dx = h(x + 1, y) - h(x - 1, y), dy = h(x, y + 1) - h(x, y - 1);
+    const nx = -dx * 2, ny = -dy * 2, nz = 1, l = Math.hypot(nx, ny, nz);
+    const i = (y * N + x) * 4;
+    img.data[i] = (nx / l * 0.5 + 0.5) * 255; img.data[i + 1] = (ny / l * 0.5 + 0.5) * 255; img.data[i + 2] = (nz / l * 0.5 + 0.5) * 255; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+// niska jakość: zwykła tafla bez odbić (odbicia rysują całą scenę drugi raz – to najwięcej kosztuje)
+const water = QUALITY === 'low'
+  ? Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: '#16708e', roughness: 0.2, metalness: 0.15 })), {})
+  : new Water(new THREE.PlaneGeometry(600, 600), {
+  textureWidth: QUALITY === 'high' ? 512 : 256, textureHeight: QUALITY === 'high' ? 512 : 256, waterNormals: makeWaterNormals(),
+  sunDirection: sun.position.clone().sub(new THREE.Vector3(22, 0, 25)).normalize(), sunColor: 0xfff4e0, waterColor: 0x0b5f7f,
+  distortionScale: 2.6, fog: true
+});
+water.rotation.x = -Math.PI / 2;
+water.position.y = -0.45;
+// odbicie wody nie może być przycinane do jednego widoku podzielonego ekranu
+const waterBeforeRender = water.onBeforeRender;
+water.onBeforeRender = function (...args) {
+  const r = args[0], st = r.getScissorTest();
+  r.setScissorTest(false);
+  waterBeforeRender.apply(this, args);
+  r.setScissorTest(st);
+};
+scene.add(water);
+
+// Wyspa
+const island = new THREE.Mesh(new THREE.CylinderGeometry(ISLAND_R, ISLAND_R + 1.2, 1.4, 64), std('#e8d29a'));
+island.position.y = -0.7;
+island.receiveShadow = true;
+scene.add(island);
+const grass = new THREE.Mesh(new THREE.CircleGeometry(ISLAND_R - 1.7, 48), std('#6fbf55'));
+grass.rotation.x = -Math.PI / 2; grass.position.y = 0.01; grass.receiveShadow = true;
+scene.add(grass);
+const foam = new THREE.Mesh(new THREE.RingGeometry(ISLAND_R + 1.1, ISLAND_R + 1.8, 64), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.35 }));
+foam.rotation.x = -Math.PI / 2; foam.position.y = -0.4;
+scene.add(foam);
+
+// Pomost
+const dock = new THREE.Mesh(new THREE.BoxGeometry(DOCK.x1 - DOCK.x0, 0.22, DOCK.z1 - DOCK.z0), std('#8a8f96'));
+dock.position.set(0, -0.08, (DOCK.z0 + DOCK.z1) / 2);
+dock.castShadow = dock.receiveShadow = true;
+scene.add(dock);
+for (let z = DOCK.z0 + 1; z < DOCK.z1; z += 1.6) for (const x of [DOCK.x0 + 0.1, DOCK.x1 - 0.1]) {
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.2, 8), std('#5b4a3a'));
+  post.position.set(x, -0.6, z);
+  scene.add(post);
+}
+
+// Tablica START
+function signTexture() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 160;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f5ecd4'; g.fillRect(0, 0, 512, 160);
+  g.strokeStyle = '#5b4a3a'; g.lineWidth = 14; g.strokeRect(7, 7, 498, 146);
+  g.fillStyle = '#2a2a2a'; g.font = '900 110px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('START', 256, 86);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const sign = new THREE.Mesh(new THREE.BoxGeometry(5, 1.6, 0.2), [std('#5b4a3a'), std('#5b4a3a'), std('#5b4a3a'), std('#5b4a3a'), new THREE.MeshStandardMaterial({ map: signTexture() }), std('#5b4a3a')]);
+sign.position.set(-3.4, 2.4, 5.6);
+sign.scale.setScalar(0.7);
+sign.rotation.y = Math.PI;                 // napis w stronę kamery
+sign.castShadow = true;
+scene.add(sign);
+for (const x of [-1.4, 1.4]) {
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.0, 8), std('#5b4a3a'));
+  leg.position.set(-3.4 + x, 0.9, 5.6); leg.castShadow = true; scene.add(leg);
+}
+
+// Palmy i kamienie (przeszkody)
+const obstacles = [];
+for (const [x, z] of PALMS) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.26, 3.2, 8), std('#8a6a44'));
+  trunk.position.y = 1.6; trunk.rotation.z = 0.12; trunk.castShadow = true;
+  g.add(trunk);
+  for (let i = 0; i < 6; i++) {
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.35, 2.1, 4), std('#2f9a45'));
+    leaf.position.set(0.2, 3.25, 0);
+    leaf.rotation.set(Math.PI / 2 - 0.5, i * Math.PI / 3, 0, 'YXZ');
+    leaf.translateY(0.9);
+    leaf.castShadow = true;
+    g.add(leaf);
+  }
+  g.position.set(x, 0, z);
+  scene.add(g);
+  obstacles.push({ x, z, r: 0.45 });
+}
+for (const [x, z, r] of ROCKS) {
+  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), std('#8d8d8d'));
+  rock.position.set(x, r * 0.5, z); rock.castShadow = true;
+  scene.add(rock);
+  obstacles.push({ x, z, r: r * 0.9 });
+}
+
+// ============================================================
+// STATEK
+// ============================================================
+const boat = new THREE.Group();
+const hull = new THREE.Mesh(new RoundedBoxGeometry(BOAT_HALF.w * 2 + 0.3, 0.9, BOAT_HALF.l * 2 + 0.4, 3, 0.25), std('#7a4b2a'));
+hull.position.y = -0.5; hull.castShadow = true;
+const deck = new THREE.Mesh(new THREE.BoxGeometry(BOAT_HALF.w * 2, 0.06, BOAT_HALF.l * 2), std('#c79a62'));
+deck.position.y = -0.03; deck.receiveShadow = true;
+const bow = new THREE.Mesh(new THREE.ConeGeometry(BOAT_HALF.w + 0.15, 1.4, 4, 1), std('#7a4b2a'));
+bow.rotation.set(Math.PI / 2, Math.PI / 4, 0); bow.scale.set(1, 1, 0.45);
+bow.position.set(0, -0.5, BOAT_HALF.l + 0.85);
+const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.6, 8), std('#5b4a3a'));
+mast.position.set(0, 1.8, 1.2); mast.castShadow = true;
+const sail = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.4), std('#fbf6ea', { side: THREE.DoubleSide }));
+sail.position.set(0, 2.2, 1.15); sail.castShadow = true;
+boat.add(hull, deck, bow, mast, sail);
+boat.position.copy(BOAT_POS);
+scene.add(boat);
+const boatMats = [];
+boat.traverse(o => { if (o.material) { o.material.transparent = true; boatMats.push(o.material); } });
+function setBoatOpacity(a) { boatMats.forEach(m => m.opacity = a); }
+
+// stan statku: 'docked' (czeka i odlicza) | 'leaving' (płynie do ósemki) | 'unloading' (wysadza gracza) | 'returning' (wraca na wyspę)
+const boatState = { phase: 'docked', t: BOAT_INTERVAL, anim: 0, passenger: null };
+
+// ============================================================
+// POSTACIE
+// ============================================================
+function makeCharacter(color) {
+  const g = new THREE.Group();
+  g.rotation.order = 'YXZ';
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.5, 4, 12), std(color, { roughness: 0.5 }));
+  body.position.y = 0.62; body.castShadow = true;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 16, 12), std('#f2c9a0', { roughness: 0.6 }));
+  head.position.y = 1.28; head.castShadow = true;
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.05, 6, 20), std(color));
+  band.rotation.x = Math.PI / 2; band.position.y = 1.4;
+  g.add(body, head, band);
+  for (const x of [-0.1, 0.1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), std('#111'));
+    eye.position.set(x, 1.32, 0.23);
+    g.add(eye);
+  }
+  // Ramię z mieczem
+  const arm = new THREE.Group();
+  arm.position.set(0.38, 0.85, 0.05);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.25, 6), std('#5b3a1a'));
+  handle.rotation.x = Math.PI / 2; handle.position.z = 0.12;
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.05, 0.05), std('#c9a227', { metalness: 0.7, roughness: 0.3 }));
+  guard.position.z = 0.25;
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.85), std('#dfe6ee', { metalness: 0.9, roughness: 0.2 }));
+  blade.position.z = 0.7; blade.castShadow = true;
+  arm.add(handle, guard, blade);
+  g.add(arm);
+  g.userData.arm = arm;
+  scene.add(g);
+  return g;
+}
+
+// ============================================================
+// STEROWANIE
+// ============================================================
+const down = new Set();
+const pressed = new Set();
+const ALL_KEYS = new Set(PLAYER_DEFS.flatMap(d => Object.values(d.keys).flat()));
+// podczas pisania w polu tekstowym (imię, kod pokoju) gra nie przechwytuje klawiszy
+const typing = () => { const a = document.activeElement; return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'); };
+addEventListener('keydown', e => {
+  if (typing()) return;
+  if (typeof net !== 'undefined' && net.mode !== 'local') { onNetKey(e, true); return; }
+  if (ALL_KEYS.has(e.code)) e.preventDefault();
+  if (!down.has(e.code)) pressed.add(e.code);
+  down.add(e.code);
+});
+addEventListener('keyup', e => {
+  if (typing()) { down.delete(e.code); return; }
+  if (typeof net !== 'undefined' && net.mode !== 'local') { onNetKey(e, false); return; }
+  down.delete(e.code);
+});
+addEventListener('blur', () => down.clear());
+const anyDown = codes => codes.some(c => down.has(c));
+const anyPressed = codes => codes.some(c => pressed.has(c));
+
+// ============================================================
+// LOGIKA
+// ============================================================
+let players = [], arrivals = [], running = false, numPlayers = 2;
+const splashes = [];
+
+function onIsland(x, z) { return Math.hypot(x, z) < ISLAND_R - 0.15; }
+function onDock(x, z) { return x > DOCK.x0 && x < DOCK.x1 && z > DOCK.z0 - 1 && z < DOCK.z1; }
+function onBoat(x, z) { return Math.abs(x - BOAT_POS.x) < BOAT_HALF.w + 0.15 && Math.abs(z - BOAT_POS.z) < BOAT_HALF.l + 0.15; }
+function onGround(x, z) {
+  return onIsland(x, z) || onDock(x, z) || (boatState.phase === 'docked' && onBoat(x, z));
+}
+
+function spawnPoint(i, n) {
+  const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.9;
+  return { x: Math.cos(a) * 2.5, z: Math.sin(a) * -2.5 + 1 };
+}
+
+function newGame(n) {
+  players.forEach(p => { scene.remove(p.mesh); p.tag.remove(); });
+  players = []; arrivals = [];
+  for (let i = 0; i < n; i++) {
+    const def = PLAYER_DEFS[i];
+    const sp = spawnPoint(i, n);
+    const tag = document.createElement('div');
+    tag.className = 'tag'; tag.textContent = 'P' + (i + 1); tag.style.background = def.color;
+    document.body.appendChild(tag);
+    players.push({
+      i, def, mesh: makeCharacter(def.color), tag,
+      x: sp.x, z: sp.z, y: 0, vx: 0, vz: 0, facing: Math.PI,
+      state: 'island', stun: 0, swing: 0, cooldown: 0, fallT: 0, inv: 0,
+      coins: 0, woodUses: 0, ironUses: 0, freeze: 0, water: 0
+    });
+  }
+  boatState.phase = 'docked'; boatState.t = BOAT_INTERVAL; boatState.passenger = null;
+  eightReset();
+  boat.position.copy(BOAT_POS); boat.rotation.set(0, 0, 0); setBoatOpacity(1);
+  document.getElementById('log').innerHTML = '';
+  log('Walka o statek! Pierwszy odpływa za 7 sekund.');
+  running = true;
+  renderPanel();
+}
+
+function swingAttack(p) {
+  p.swing = 0.28; p.cooldown = 0.55;
+  const fx = Math.sin(p.facing), fz = Math.cos(p.facing);
+  for (const q of players) {
+    if (q === p || q.state !== 'island' || q.inv > 0 || inSafe(q)) continue;
+    const dx = q.x - p.x, dz = q.z - p.z, d = Math.hypot(dx, dz);
+    if (d > HIT_RANGE || d < 0.01) continue;
+    if ((dx * fx + dz * fz) / d < 0.25) continue;      // tylko przed sobą
+    q.vx = dx / d * HIT_FORCE; q.vz = dz / d * HIT_FORCE;
+    q.stun = 0.42;
+  }
+}
+
+function fallIntoWater(p) {
+  p.state = 'falling'; p.fallT = 0;
+  addSplash(p.x, p.z);
+  log(`🌊 ${p.def.name} wpadł do wody!`, p.def.color);
+}
+
+function respawn(p) {
+  const a = Math.random() * Math.PI * 2, r = Math.random() * 1.5;
+  p.x = Math.cos(a) * r; p.z = Math.sin(a) * r; p.y = 0;
+  p.vx = p.vz = 0; p.state = 'island'; p.inv = 1.2; p.stun = 0;
+  renderPanel();
+}
+
+function updatePlayers(dt) {
+  for (const p of players) {
+    p.cooldown = Math.max(0, p.cooldown - dt);
+    p.swing = Math.max(0, p.swing - dt);
+    p.inv = Math.max(0, p.inv - dt);
+    if (p.state === 'falling') {
+      p.fallT += dt;
+      // tonie, potem dryfuje w wodzie – razem 3 sekundy straty
+      p.y = Math.max(-0.95, -p.fallT * p.fallT * 6) + (p.fallT > 0.5 ? Math.sin(p.fallT * 5) * 0.06 : 0);
+      if (p.fallT >= WATER_TIME) respawn(p);
+      continue;
+    }
+    if (p.state !== 'island') continue;
+
+    const k = p.def.keys;
+    // kamera patrzy od strony morza w stronę piramidy, więc „góra” = w stronę piramidy (+z)
+    let dx = (anyDown(k.left) ? 1 : 0) - (anyDown(k.right) ? 1 : 0);
+    let dz = (anyDown(k.up) ? 1 : 0) - (anyDown(k.down) ? 1 : 0);
+    const len = Math.hypot(dx, dz);
+    if (len) { dx /= len; dz /= len; }
+
+    if (p.stun > 0) {
+      p.stun -= dt;
+      const f = Math.exp(-3.5 * dt);
+      p.vx *= f; p.vz *= f;
+    } else {
+      const a = Math.min(1, dt * 12);
+      p.vx += (dx * SPEED - p.vx) * a;
+      p.vz += (dz * SPEED - p.vz) * a;
+      if (len) {
+        const target = Math.atan2(dx, dz);
+        let diff = target - p.facing;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        p.facing += diff * Math.min(1, dt * 16);
+      }
+      if (inSafe(p)) {                                   // strefa bezpieczna: atak = kupowanie
+        if (anyPressed(k.hit)) { const it = shopItemAt(p); if (it) buyItem(p, it); }
+      } else if (anyPressed(k.hit) && p.cooldown <= 0) swingAttack(p);
+    }
+    p.x += p.vx * dt; p.z += p.vz * dt;
+
+    for (const o of obstacles) {
+      const ox = p.x - o.x, oz = p.z - o.z, d = Math.hypot(ox, oz), min = o.r + 0.35;
+      if (d < min && d > 0.001) { p.x = o.x + ox / d * min; p.z = o.z + oz / d * min; }
+    }
+  }
+
+  // Gracze nie wchodzą w siebie
+  const act = players.filter(p => p.state === 'island');
+  for (let a = 0; a < act.length; a++) for (let b = a + 1; b < act.length; b++) {
+    const p = act[a], q = act[b];
+    const dx = q.x - p.x, dz = q.z - p.z, d = Math.hypot(dx, dz), min = 0.72;
+    if (d < min && d > 0.001) {
+      const push = (min - d) / 2;
+      p.x -= dx / d * push; p.z -= dz / d * push;
+      q.x += dx / d * push; q.z += dz / d * push;
+    }
+  }
+  for (const p of act) if (!onGround(p.x, p.z)) fallIntoWater(p);
+}
+
+// trasa statku: od pomostu wyspy łukiem do STARTU ósemki (dziobem w stronę ósemki)
+let boatPath = null;
+function getBoatPath() {
+  if (!boatPath) {
+    const sx = E.x, sz = E.z - HZ - 3.6;     // tuż przed polem START ósemki
+    boatPath = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(BOAT_POS.x, 0, BOAT_POS.z), new THREE.Vector3(BOAT_POS.x + 1.2, 0, BOAT_POS.z + (sz - BOAT_POS.z) * 0.35),
+      new THREE.Vector3(sx - 1.2, 0, BOAT_POS.z + (sz - BOAT_POS.z) * 0.7), new THREE.Vector3(sx, 0, sz)
+    ]);
+  }
+  return boatPath;
+}
+function placeBoatOnPath(u, back) {
+  const path = getBoatPath();
+  const p = path.getPointAt(u), t = path.getTangentAt(u);
+  boat.position.set(p.x, Math.sin(performance.now() / 300) * 0.06, p.z);
+  const yaw = Math.atan2(t.x, t.z) + (back ? Math.PI : 0);
+  let d = yaw - boat.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d));
+  boat.rotation.y += d * 0.15;                       // płynny skręt
+  boat.rotation.z = Math.sin(performance.now() / 450) * 0.04;
+}
+
+function updateBoat(dt) {
+  if (boatState.phase === 'docked') {
+    if (!islandActive()) { boatState.t = BOAT_INTERVAL; return; }   // nikogo na wyspie – statek stoi
+    boatState.t -= dt;
+    if (boatState.t <= 0) departBoat();
+  } else if (boatState.phase === 'leaving') {
+    boatState.anim += dt;
+    const k = Math.min(1, boatState.anim / SAIL_TIME);
+    placeBoatOnPath(k * k * (3 - 2 * k), false);
+    const pas = boatState.passenger;
+    if (pas) { pas.x = boat.position.x; pas.z = boat.position.z; pas.y = boat.position.y; pas.facing = boat.rotation.y; }
+    if (k >= 1) arriveBoat();
+  } else if (boatState.phase === 'unloading') {
+    boatState.anim += dt;
+    if (boatState.anim >= UNLOAD_TIME) { boatState.phase = 'returning'; boatState.anim = 0; }
+  } else if (boatState.phase === 'returning') {
+    boatState.anim += dt;
+    const k = Math.min(1, boatState.anim / SAIL_TIME);
+    placeBoatOnPath(1 - k * k * (3 - 2 * k), true);
+    if (k >= 1) {                                       // z powrotem przy pomoście
+      boat.position.set(BOAT_POS.x, 0, BOAT_POS.z); boat.rotation.set(0, 0, 0);
+      boatState.phase = 'docked'; boatState.t = BOAT_INTERVAL;
+      log('⛵ Statek wrócił na wyspę.');
+    }
+  }
+}
+
+function departBoat() {
+  boatDeparted();
+  const aboard = players.filter(p => p.state === 'island' && Math.abs(p.x - BOAT_POS.x) < BOAT_HALF.w + 0.15 && Math.abs(p.z - BOAT_POS.z) < BOAT_HALF.l);
+  let chosen = null;
+  if (aboard.length) {
+    aboard.sort((a, b) => Math.hypot(a.x - BOAT_POS.x, a.z - BOAT_POS.z) - Math.hypot(b.x - BOAT_POS.x, b.z - BOAT_POS.z));
+    chosen = aboard[0];
+    chosen.state = 'sailing'; chosen.vx = chosen.vz = 0; chosen.facing = 0;
+    for (const p of aboard.slice(1)) { p.x = 0; p.z = DOCK.z1 - 1.4; p.vx = p.vz = 0; }
+    log(`⛵ ${chosen.def.name} odpływa na ósemkę!`, chosen.def.color);
+  } else log('⛵ Statek odpłynął pusty…');
+  boatState.passenger = chosen;
+  boatState.phase = 'leaving'; boatState.anim = 0;
+  renderPanel();
+}
+
+function arriveBoat() {
+  const pas = boatState.passenger;
+  boatState.passenger = null;
+  boatState.phase = 'unloading'; boatState.anim = 0;
+  if (pas) {
+    arrivals.push(pas);
+    log(`🏁 ${pas.def.name} dopłynął na ósemkę jako ${arrivals.length}.`, pas.def.color);
+    enterEight(pas);
+  }
+  renderPanel();
+}
+
+function finish() {
+  running = false;
+  const w = pyrWinner;
+  document.getElementById('winTitle').textContent = w ? `🏆 ${w.def.name} zdobywa skarb!` : 'Koniec gry';
+  document.getElementById('winTitle').style.color = w ? w.def.color : '#fff';
+  setTimeout(() => document.getElementById('endScreen').style.display = 'flex', 600);
+  netEvent({ e: 'end', title: document.getElementById('winTitle').textContent, color: document.getElementById('winTitle').style.color });
+}
+
+// ============================================================
+// ETAP 2: ÓSEMKA
+// ============================================================
+// Prawdziwa ósemka: trasy krzyżują się na środku.
+//  krótka: START → lewa strona góry (TL) → środek → prawa strona dołu (BR) → TELEPORT
+//  długa:  START → prawa strona góry (TR) → środek → lewa strona dołu (BL) → TELEPORT
+// Mapa: lewa połowa – wyspa u góry, ósemka pod nią; prawa połowa – piramida z wulkanami
+const TRACK_W = 2.1;
+const HZ = 15;                               // połowa wysokości ósemki
+const SHORT_W = 5.6, LONG_W = 11.2;          // szerokość brzuszków krótkiej i długiej trasy
+const END_CLEAR = 1.45, CENTER_CLEAR = 2.25; // miejsce na plac START/TELEPORT i środek
+const E = new THREE.Vector3(0, 0, 41.6);     // środek ósemki (checkpoint) – pod wyspą; START od strony wyspy
+const TURN_TIME = 25, CHOICE_TIME = 10;
+const TILE_Y = 0.3;
+
+// Typy pól: R -3, G +2, Y powrót (na START albo checkpoint), P dodatkowy rzut, B nic (niebieskie)
+const EIGHT_PATHS = {
+  // długi odcinek: 3× +2, 3× -3, 1× ↺, 1× rzut; krótki: 2× +2, 2× -3, 1× ↺, 1× rzut; reszta niebieska
+  // rośliny po obu stronach rozwidlenia mogą mieć wspólne numery pól, ale nigdy nie gryzą ich w tej samej rundzie
+  TL: { phi0: Math.PI, phi1: Math.PI / 2, W: SHORT_W, from: 'S', to: 'M', types: ['G', 'B', 'B', 'G', 'R', 'B', 'Y', 'B', 'R', 'B', 'P'], plants: [[2, 4], [5, 7], [8, 10]] },
+  BR: { phi0: Math.PI / 2, phi1: 0, W: SHORT_W, from: 'M', to: 'T', types: ['G', 'B', 'B', 'G', 'R', 'B', 'P', 'B', 'Y', 'B', 'R'], plants: [[2, 4], [6, 8], [9, 11]] },
+  TR: { phi0: Math.PI, phi1: Math.PI * 1.5, W: LONG_W, from: 'S', to: 'M', types: ['B', 'P', 'B', 'R', 'B', 'Y', 'B', 'R', 'B', 'G', 'B', 'B', 'G', 'B', 'B', 'G', 'R', 'B'], plants: [[3, 5], [10, 12]] },
+  BL: { phi0: Math.PI * 1.5, phi1: Math.PI * 2, W: LONG_W, from: 'M', to: 'T', types: ['B', 'Y', 'B', 'G', 'B', 'B', 'G', 'B', 'B', 'G', 'R', 'B', 'P', 'B', 'R', 'B', 'R', 'B'], plants: [[4, 6], [12, 14]] },
+};
+// wybór drogi: na STARCIE (góra) i na środku (dół); lewo / prawo
+const CHOICES = { S: ['TL', 'TR'], M: ['BL', 'BR'] };
+const TYPE_COLOR = { N: '#efe4c8', R: '#e04a4a', G: '#43c45c', Y: '#f2d03c', P: '#a95be0', B: '#4a8ee0', S: '#9a9aa2' };
+const TYPE_LABEL = { R: '-3', G: '+2', Y: '↺', P: '🎲', N: '', B: '' };
+
+// próbkowanie krzywej każdego odcinka po długości łuku
+const SAMPLES = 400;
+for (const seg of Object.values(EIGHT_PATHS)) {
+  seg.pts = []; seg.len = [0];
+  for (let i = 0; i <= SAMPLES; i++) {
+    const f = seg.phi0 + (seg.phi1 - seg.phi0) * i / SAMPLES;
+    seg.pts.push({ x: E.x + seg.W * Math.sin(2 * f), z: E.z + HZ * Math.cos(f) });
+    if (i) seg.len.push(seg.len[i - 1] + Math.hypot(seg.pts[i].x - seg.pts[i - 1].x, seg.pts[i].z - seg.pts[i - 1].z));
+  }
+  seg.total = seg.len[SAMPLES];
+  const mid = seg.pts[SAMPLES / 2];
+  // punkt w środku „brzuszka” (jeziora) – wyznacza stronę wewnętrzną
+  seg.lobe = new THREE.Vector3(E.x + (mid.x - E.x) * 0.05, 0, mid.z);
+}
+// punkt na odcinku w odległości s od początku; off > 0 = w stronę jeziora
+function segPoint(seg, s, off = 0) {
+  s = Math.max(0, Math.min(seg.total, s));
+  let lo = 0, hi = SAMPLES;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (seg.len[m] < s) lo = m; else hi = m; }
+  const k = (s - seg.len[lo]) / ((seg.len[hi] - seg.len[lo]) || 1);
+  const a = seg.pts[lo], b = seg.pts[hi];
+  const x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k;
+  let tx = b.x - a.x, tz = b.z - a.z; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+  let nx = -tz, nz = tx;
+  if (nx * (seg.lobe.x - x) + nz * (seg.lobe.z - z) < 0) { nx = -nx; nz = -nz; }
+  return new THREE.Vector3(x + nx * off, TILE_Y, z + nz * off);
+}
+
+const fieldsE = {};
+for (const [key, seg] of Object.entries(EIGHT_PATHS)) {
+  const n = seg.types.length;
+  const s0 = seg.from === 'S' ? END_CLEAR : CENTER_CLEAR;
+  const s1 = seg.total - (seg.to === 'T' ? END_CLEAR : CENTER_CLEAR);
+  seg.step = (s1 - s0) / n;
+  seg.ids = [];
+  for (let k = 1; k <= n; k++) {
+    const id = key + k, s = s0 + (k - 0.5) * seg.step;
+    fieldsE[id] = { id, path: key, k, s, type: seg.types[k - 1], pos: segPoint(seg, s) };
+    seg.ids.push(id);
+  }
+}
+fieldsE.S = { id: 'S', type: 'S', pos: new THREE.Vector3(E.x, TILE_Y + 0.05, E.z - HZ) };
+fieldsE.M = { id: 'M', type: 'S', pos: new THREE.Vector3(E.x, TILE_Y + 0.05, E.z) };
+fieldsE.T = { id: 'T', type: 'S', pos: new THREE.Vector3(E.x, TILE_Y + 0.05, E.z + HZ) };
+
+// ---------- grafika ----------
+const groundLabels = [];   // napisy leżące na polach – obracają się razem z kamerą, żeby zawsze były czytelne
+const eightGroup = new THREE.Group();
+scene.add(eightGroup);
+
+function stripGeo(seg, s0, s1, offA, offB, h, bevel = true) {
+  const sh = new THREE.Shape();
+  const n = Math.max(3, Math.ceil((s1 - s0) / 0.12));
+  for (let i = 0; i <= n; i++) { const p = segPoint(seg, s0 + (s1 - s0) * i / n, offB); i ? sh.lineTo(p.x, -p.z) : sh.moveTo(p.x, -p.z); }
+  for (let i = n; i >= 0; i--) { const p = segPoint(seg, s0 + (s1 - s0) * i / n, offA); sh.lineTo(p.x, -p.z); }
+  const g = new THREE.ExtrudeGeometry(sh, bevel ? { depth: h, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.03, bevelSegments: 2 } : { depth: h, bevelEnabled: false });
+  g.rotateX(-Math.PI / 2);
+  return g;
+}
+
+// kamienna podstawa – cztery odcinki od końca do końca tworzą jedną, ciągłą ósemkę
+const baseMat = std('#8b3a2e', { roughness: 0.7 });
+const goldMat = std('#d9b04a', { metalness: 0.8, roughness: 0.3 });
+Object.values(EIGHT_PATHS).forEach((seg, i) => {
+  const m = new THREE.Mesh(stripGeo(seg, 0, seg.total, -TRACK_W / 2 - 0.45, TRACK_W / 2 + 0.4, 0.55, false), baseMat);
+  m.position.y = -0.35 + i * 0.004;
+  m.receiveShadow = true;
+  eightGroup.add(m);
+  for (const off of [-TRACK_W / 2 - 0.05, TRACK_W / 2 + 0.05]) {
+    const pts = [];
+    for (let k = 0; k <= 80; k++) pts.push(segPoint(seg, seg.total * k / 80, off).setY(TILE_Y - 0.02));
+    eightGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, 0.06, 6), goldMat));
+  }
+});
+// jeziora w obu brzuszkach
+for (const [a, b] of [['TL', 'TR'], ['BR', 'BL']]) {
+  const A = EIGHT_PATHS[a], B = EIGHT_PATHS[b];
+  const pts = [];
+  for (let k = 0; k <= 60; k++) pts.push(segPoint(A, A.total * k / 60, TRACK_W / 2 + 0.35));
+  for (let k = 60; k >= 0; k--) pts.push(segPoint(B, B.total * k / 60, TRACK_W / 2 + 0.35));
+  const shape = new THREE.Shape(pts.map(p => new THREE.Vector2(p.x, -p.z)));
+  const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
+  const lake = new THREE.Mesh(g, std('#17a8d4', { roughness: 0.1, metalness: 0.1, emissive: '#0b4f6e', emissiveIntensity: 0.35 }));
+  lake.position.y = -0.12;
+  eightGroup.add(lake);
+  for (let i = 0; i < 6; i++) {
+    const seg = Math.random() < 0.5 ? A : B;
+    const p = segPoint(seg, (0.3 + Math.random() * 0.4) * seg.total, TRACK_W / 2 + 1.3 + Math.random() * 1.4);
+    const pad = new THREE.Mesh(new THREE.CircleGeometry(0.3 + Math.random() * 0.2, 16, 0.3, Math.PI * 1.8), std('#3f9a3a'));
+    pad.rotation.x = -Math.PI / 2; pad.rotation.z = Math.random() * 6;
+    pad.position.set(p.x, -0.1, p.z);
+    eightGroup.add(pad);
+  }
+}
+
+// pola
+function fieldTexture(f) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'); g.scale(2, 2);
+  g.fillStyle = 'rgba(0,0,0,.45)'; g.font = 'bold 30px Segoe UI, sans-serif';
+  g.textAlign = 'left'; g.textBaseline = 'top';
+  g.fillText(f.k, 10, 6);
+  const txt = TYPE_LABEL[f.type];
+  if (txt) {
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `900 ${txt === '↺' ? 72 : 58}px Segoe UI, Segoe UI Emoji, sans-serif`;
+    g.lineWidth = 7; g.strokeStyle = 'rgba(255,255,255,.65)'; g.strokeText(txt, 66, 72);
+    g.fillStyle = '#1d1a22'; g.fillText(txt, 66, 72);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = MAX_ANISO;
+  return t;
+}
+const tileMats = {};
+for (const seg of Object.values(EIGHT_PATHS)) {
+  seg.ids.forEach(id => {
+    const f = fieldsE[id];
+    if (!tileMats[f.type]) tileMats[f.type] = std(TYPE_COLOR[f.type], { roughness: 0.5 });
+    const m = new THREE.Mesh(stripGeo(seg, f.s - seg.step / 2 + 0.03, f.s + seg.step / 2 - 0.03, -TRACK_W / 2 + 0.06, TRACK_W / 2 - 0.06, 0.22), tileMats[f.type]);
+    f.mesh = m;
+    m.position.y = TILE_Y - 0.26;
+    m.receiveShadow = true;
+    eightGroup.add(m);
+    const lab = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.25), new THREE.MeshBasicMaterial({ map: fieldTexture(f), transparent: true }));
+    lab.rotation.x = -Math.PI / 2;
+    lab.position.set(f.pos.x, TILE_Y + 0.02, f.pos.z);
+    eightGroup.add(lab); groundLabels.push(lab);
+    f.label = lab;
+  });
+}
+
+// Losowe rozstawienie pól specjalnych (nowe w każdej grze).
+// Długi odcinek: 3× +2, 3× -3, 1× ↺, 1× 🎲; krótki: 2× +2, 2× -3, 1× ↺, 1× 🎲.
+// +2 i -3 mogą prowadzić na siebie nawzajem, ale nigdy na ↺ ani na 🎲; 🎲 nie leży pod rośliną.
+function randomizeFields() {
+  for (const [key, seg] of Object.entries(EIGHT_PATHS)) {
+    const n = seg.ids.length, c = n >= 15 ? 3 : 2;
+    const plantSet = new Set(seg.plants.flat());
+    for (let tries = 0; tries < 5000; tries++) {
+      const items = [...Array(c).fill('G'), ...Array(c).fill('R'), 'Y', 'P'];
+      const t = Array(n).fill('B');
+      const free = [...Array(n).keys()].sort(() => Math.random() - 0.5);
+      items.forEach((v, i) => t[free[i]] = v);
+      const bad = t.some((v, i) => {
+        const k = i + 1;
+        if (v === 'P' && plantSet.has(k)) return true;
+        if (v === 'G') { if (k > n - 2) return true; if (['Y', 'P'].includes(t[k + 1])) return true; }
+        if (v === 'R' && k >= 4 && ['Y', 'P'].includes(t[k - 4])) return true;
+        return false;
+      }) || t.some((v, i) => {
+        // bez nieskończonych pętli +2/-3: idziemy łańcuchem i sprawdzamy, czy nie wracamy na to samo pole
+        const seen = new Set(); let k = i + 1;
+        while (k >= 1 && k <= n && (t[k - 1] === 'G' || t[k - 1] === 'R')) {
+          if (seen.has(k)) return true;
+          seen.add(k);
+          k += t[k - 1] === 'G' ? 2 : -3;
+        }
+        return false;
+      });
+      if (!bad) { seg.types = t; break; }
+    }
+    seg.ids.forEach((id, i) => {
+      const f = fieldsE[id];
+      f.type = seg.types[i];
+      if (!tileMats[f.type]) tileMats[f.type] = std(TYPE_COLOR[f.type], { roughness: 0.5 });
+      f.mesh.material = tileMats[f.type];
+      if (f.label.material.map) f.label.material.map.dispose();
+      f.label.material.map = fieldTexture(f);
+      f.label.material.needsUpdate = true;
+    });
+  }
+}
+function paintEightFields() {
+  for (const seg of Object.values(EIGHT_PATHS)) seg.ids.forEach((id, i) => {
+    const f = fieldsE[id];
+    f.type = seg.types[i];
+    if (!tileMats[f.type]) tileMats[f.type] = std(TYPE_COLOR[f.type], { roughness: 0.5 });
+    f.mesh.material = tileMats[f.type];
+    if (f.label.material.map) f.label.material.map.dispose();
+    f.label.material.map = fieldTexture(f);
+    f.label.material.needsUpdate = true;
+  });
+}
+function bigLabel(txt, w, color = '#ffffff') {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 160;
+  const g = c.getContext('2d');
+  g.font = '900 92px Segoe UI, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 12; g.strokeStyle = 'rgba(0,0,0,.45)'; g.strokeText(txt, 256, 84);
+  g.fillStyle = color; g.fillText(txt, 256, 84);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = MAX_ANISO;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 160 / 512), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
+  m.rotation.x = -Math.PI / 2;
+  groundLabels.push(m);
+  return m;
+}
+const grayMat = std(TYPE_COLOR.S, { roughness: 0.6 });
+// START i TELEPORT
+for (const [id, txt, dz] of [['S', 'START', -2.5], ['T', 'TELEPORT', 2.5]]) {
+  const p = fieldsE[id].pos;
+  const tile = new THREE.Mesh(new RoundedBoxGeometry(3.0, 0.34, 2.6, 3, 0.15), grayMat);
+  tile.position.set(p.x, TILE_Y - 0.15, p.z);
+  tile.receiveShadow = true;
+  eightGroup.add(tile);
+  const lab = bigLabel(txt, 3.6);
+  lab.position.set(p.x, TILE_Y + 0.05, p.z + dz);
+  eightGroup.add(lab);
+}
+// środek – checkpoint: okrągły plac na skrzyżowaniu tras
+const plaza = new THREE.Mesh(new THREE.CylinderGeometry(CENTER_CLEAR - 0.05, CENTER_CLEAR + 0.05, 0.36, 40), grayMat);
+plaza.position.set(E.x, TILE_Y - 0.14, E.z);
+plaza.receiveShadow = true;
+const plazaRing = new THREE.Mesh(new THREE.TorusGeometry(CENTER_CLEAR - 0.05, 0.07, 8, 48), goldMat);
+plazaRing.rotation.x = -Math.PI / 2; plazaRing.position.set(E.x, TILE_Y + 0.04, E.z);
+const cpLabel = bigLabel('CHECKPOINT', 2.6, '#ffe066');
+cpLabel.position.set(E.x, TILE_Y + 0.06, E.z + 0.95);
+const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 8), std('#dddddd', { metalness: 0.7, roughness: 0.3 }));
+flagPole.position.set(E.x + 1.0, TILE_Y + 0.8, E.z - 0.7);
+const cpFlagGeo = new THREE.PlaneGeometry(0.7, 0.45, 10, 2); cpFlagGeo.translate(0.35, 0, 0);
+const cpFlagBase = cpFlagGeo.attributes.position.array.slice();
+const cpFlag = new THREE.Mesh(cpFlagGeo, std('#ff4d4d', { side: THREE.DoubleSide }));
+cpFlag.position.set(E.x + 1.0, TILE_Y + 1.35, E.z - 0.7);
+eightGroup.add(plaza, plazaRing, cpLabel, flagPole, cpFlag);
+
+// portal teleportu
+const portal = new THREE.Group();
+const portalRing = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.13, 12, 40), new THREE.MeshStandardMaterial({ color: '#7fe8ff', emissive: '#29c6ff', emissiveIntensity: 1.6 }));
+const portalCore = new THREE.Mesh(new THREE.CircleGeometry(0.85, 32), new THREE.MeshBasicMaterial({ color: '#a8f3ff', transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+portal.add(portalRing, portalCore);
+portal.position.copy(fieldsE.T.pos).add(new THREE.Vector3(0, 1.3, 0.6));
+eightGroup.add(portal);
+
+// strzałki wyboru drogi
+function makeArrow(color) {
+  const g = new THREE.Group();
+  const m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6 });
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 12), m);
+  head.rotation.z = -Math.PI / 2; head.position.x = 0.45;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.14, 0.14), m);
+  g.add(head, shaft); g.visible = false;
+  eightGroup.add(g);
+  return g;
+}
+const arrowL = makeArrow('#ffe066'), arrowR = makeArrow('#ffe066');
+
+// ---------- rośliny (pole X albo X+2, co turę na zmianę; czerwone kółko pokazuje, które gryzą) ----------
+const plants = [];
+for (const [key, seg] of Object.entries(EIGHT_PATHS)) {
+  seg.plants.forEach(([a, b], idx) => {
+    const fields = [seg.ids[a - 1], seg.ids[b - 1]];
+    const mid = fieldsE[seg.ids[a]];
+    const pos = segPoint(seg, mid.s, TRACK_W / 2 + (idx % 2 ? 2.0 : 1.05));
+    pos.y = -0.1;
+    const g = new THREE.Group();
+    g.position.copy(pos);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.15, 1.2, 8), std('#2f8a3a'));
+    stem.position.y = 0.55;
+    const headG = new THREE.Group(); headG.position.y = 1.25;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 14), std('#7a2a7a', { roughness: 0.45 }));
+    const spots = new THREE.Mesh(new THREE.SphereGeometry(0.43, 18, 14, 0, Math.PI * 2, 0, 1.1), std('#3dbb4d', { roughness: 0.5 }));
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 8, 20), std('#e04a4a'));
+    lip.position.z = 0.33;
+    const mouth = new THREE.Mesh(new THREE.CircleGeometry(0.26, 16), new THREE.MeshBasicMaterial({ color: '#3a0d10' }));
+    mouth.position.z = 0.36;
+    headG.add(head, spots, lip, mouth);
+    for (let i = 0; i < 8; i++) {
+      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.14, 4), std('#ffffff'));
+      const ta = i / 8 * Math.PI * 2;
+      tooth.position.set(Math.cos(ta) * 0.22, Math.sin(ta) * 0.22, 0.38);
+      tooth.rotation.z = ta + Math.PI / 2;
+      headG.add(tooth);
+    }
+    for (const s of [-1, 1]) {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), std('#2f9a45'));
+      leaf.scale.set(1.7, 0.22, 0.75); leaf.position.set(s * 0.5, 0.05, 0);
+      g.add(leaf);
+    }
+    g.add(stem, headG);
+    eightGroup.add(g);
+    const warn = new THREE.Mesh(new THREE.RingGeometry(0.36, 0.5, 28), new THREE.MeshBasicMaterial({ color: '#ff2b2b', transparent: true, opacity: 0.85 }));
+    warn.rotation.x = -Math.PI / 2;
+    eightGroup.add(warn);
+    plants.push({ seg: key, g, headG, fields, ti: 0, base: pos.clone(), warn, baseRot: 0, sway: Math.random() * 6 });
+  });
+}
+const plantTarget = pl => pl.fields[pl.ti];
+// Ustawia rośliny tak, żeby po lewej i prawej stronie rozwidlenia nigdy nie gryzły
+// pola o tym samym numerze w tej samej rundzie (sprawdzamy obie rundy, bo rośliny przeskakują razem).
+function phasePlants() {
+  for (const fork of [['TL', 'TR'], ['BL', 'BR']]) {
+    const group = plants.filter(pl => fork.includes(pl.seg));
+    const masks = [...Array(1 << group.length).keys()].sort(() => Math.random() - 0.5);
+    const ok = mask => [0, 1].every(flip => {
+      const nums = group.map((pl, i) => fieldsE[pl.fields[((mask >> i) & 1) ^ flip]].k);
+      return new Set(nums).size === nums.length;
+    });
+    const mask = masks.find(ok) ?? 0;
+    group.forEach((pl, i) => pl.ti = (mask >> i) & 1);
+  }
+}
+phasePlants();
+function aimPlants() {
+  for (const pl of plants) {
+    const tp = fieldsE[plantTarget(pl)].pos;
+    pl.warn.position.set(tp.x, TILE_Y + 0.035, tp.z);
+    pl.baseRot = Math.atan2(tp.x - pl.base.x, tp.z - pl.base.z);
+    pl.g.rotation.y = pl.baseRot;
+  }
+}
+aimPlants();
+
+// ---------- kostka ----------
+const DICE_REST = new THREE.Vector3(E.x + 9.5, 0.45, E.z + 7.5);   // przenoszona na planszę aktualnego gracza
+const dice = new THREE.Group();
+const diceBody = new THREE.Mesh(new RoundedBoxGeometry(0.95, 0.95, 0.95, 3, 0.15), std('#fbfaf5', { roughness: 0.3 }));
+diceBody.castShadow = true;
+dice.add(diceBody);
+const FACE = { 1: new THREE.Vector3(1, 0, 0), 6: new THREE.Vector3(-1, 0, 0), 2: new THREE.Vector3(0, 1, 0), 5: new THREE.Vector3(0, -1, 0), 3: new THREE.Vector3(0, 0, 1), 4: new THREE.Vector3(0, 0, -1) };
+const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+const pipGeo = new THREE.SphereGeometry(0.078, 10, 8), pipMat = std('#1c1c22');
+for (const v in FACE) {
+  const n = FACE[v];
+  const a = Math.abs(n.y) > 0.5 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+  const b = new THREE.Vector3().crossVectors(n, a);
+  for (const [u, w] of PIPS[v]) {
+    const pip = new THREE.Mesh(pipGeo, pipMat);
+    pip.position.copy(n).multiplyScalar(0.435).addScaledVector(a, u * 0.23).addScaledVector(b, w * 0.23);
+    dice.add(pip);
+  }
+}
+dice.position.copy(DICE_REST);
+scene.add(dice);
+dice.visible = false;                 // kostka leży teraz na stole bilardowym (2D)
+const UP = new THREE.Vector3(0, 1, 0);
+function diceTarget(v) {
+  const align = new THREE.Quaternion().setFromUnitVectors(FACE[v], UP);
+  return new THREE.Quaternion().setFromAxisAngle(UP, Math.random() * Math.PI * 2).multiply(align);
+}
+dice.quaternion.copy(diceTarget(1));
+
+// ---------- animacje ----------
+let tweens = [];
+function tween(dur, fn) { return new Promise(res => tweens.push({ t: 0, dur, fn, res })); }
+const wait = s => tween(s, () => {});
+const ease = k => k * k * (3 - 2 * k);
+const easeOut = k => 1 - Math.pow(1 - k, 3);
+function updateTweens(dt) {
+  for (const tw of [...tweens]) {
+    tw.t += dt;
+    const k = Math.min(1, tw.t / tw.dur);
+    tw.fn(k);
+    if (k >= 1) { tweens.splice(tweens.indexOf(tw), 1); tw.res(); }
+  }
+}
+async function rollDiceAnim(value) {
+  const qStart = dice.quaternion.clone(), qEnd = diceTarget(value);
+  const axis = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize();
+  const spins = 5 + Math.random() * 3, extra = new THREE.Quaternion(), qq = new THREE.Quaternion();
+  await tween(1.1, k => {
+    const e = easeOut(k);
+    extra.setFromAxisAngle(axis, (1 - e) * spins * Math.PI);
+    qq.slerpQuaternions(qStart, qEnd, e);
+    dice.quaternion.copy(extra).multiply(qq);
+    dice.position.set(DICE_REST.x, DICE_REST.y + Math.abs(Math.sin(k * Math.PI * 2.5)) * (1 - k) * 2.2, DICE_REST.z);
+  });
+  dice.quaternion.copy(qEnd); dice.position.copy(DICE_REST);
+}
+async function hopTo(p, id, dur = 0.26) {
+  const from = new THREE.Vector3(p.x, p.y, p.z), to = fieldsE[id].pos;
+  p.facing = Math.atan2(to.x - from.x, to.z - from.z);
+  p.anim = true;
+  await tween(dur, k => {
+    const e = ease(k);
+    p.x = from.x + (to.x - from.x) * e; p.z = from.z + (to.z - from.z) * e;
+    p.y = to.y + Math.sin(k * Math.PI) * 0.5;
+  });
+  p.at = id; p.y = to.y; p.anim = false;
+}
+async function flyTo(p, id) {
+  const from = new THREE.Vector3(p.x, p.y, p.z), to = fieldsE[id].pos;
+  p.anim = true;
+  await tween(1.5, k => {
+    const e = ease(k);
+    p.x = from.x + (to.x - from.x) * e; p.z = from.z + (to.z - from.z) * e;
+    p.y = to.y + Math.sin(k * Math.PI) * 4;
+    p.facing += 0.25;
+  });
+  p.at = id; p.y = to.y; p.anim = false;
+}
+
+// ---------- logika tur ----------
+const eight = { queue: [], cur: -1, phase: 'idle', timer: 0, choice: null, finishedOrder: [], sawBoat: false, boatWaiters: [], round: 1, rolled: new Set() };
+const randDie = () => 1 + Math.floor(Math.random() * 6);
+const nameOf = p => p.def.name;
+// ktoś jeszcze czeka na wyspie na statek?
+const islandActive = () => players.some(p => ['island', 'falling'].includes(p.state));
+// ile sekund do najbliższego odpłynięcia statku
+function boatDepartIn() {
+  if (boatState.phase === 'docked') return boatState.t;
+  if (boatState.phase === 'leaving') return Math.max(0, SAIL_TIME - boatState.anim) + UNLOAD_TIME + SAIL_TIME + BOAT_INTERVAL;
+  if (boatState.phase === 'unloading') return Math.max(0, UNLOAD_TIME - boatState.anim) + SAIL_TIME + BOAT_INTERVAL;
+  return Math.max(0, SAIL_TIME - boatState.anim) + BOAT_INTERVAL;
+}
+
+function eightReset() {
+  resetShark(); resetTramp();
+  randomizeFields();
+  randomizePyramid();
+  resetTop();
+  eight.queue = []; eight.cur = -1; eight.phase = 'idle'; eight.timer = 0; eight.choice = null;
+  eight.finishedOrder = []; eight.sawBoat = false; eight.boatWaiters = []; eight.round = 1; eight.rolled = new Set();
+  tweens = [];
+  phasePlants();
+  plants.forEach(pl => pl.headG.position.set(0, 1.25, 0));
+  aimPlants();
+  hideChoice();
+  arrowL.visible = arrowR.visible = false;
+  renderEightHud();
+}
+
+function enterEight(p) {
+  p.state = 'eight'; p.at = 'S'; p.trail = ['S']; p.topSeg = null; p.checkpoint = false;
+  const s = fieldsE.S.pos;
+  p.x = s.x; p.z = s.z; p.y = s.y; p.facing = Math.PI / 2;
+  p.mesh.visible = true;
+  if (!eight.queue.includes(p)) eight.queue.push(p);
+  log(`🎲 ${nameOf(p)} dołącza do gry na ósemce.`, p.def.color);
+  if (eight.phase === 'idle') startTurn(eight.queue.indexOf(p));
+}
+
+// wywoływane, gdy statek dopłynie (z pasażerem albo pusty)
+// wywoływane w chwili odpłynięcia statku z wyspy – kończy turę gracza na ósemce
+function boatDeparted() {
+  eight.sawBoat = true;
+  eight.boatWaiters.splice(0).forEach(r => r());
+}
+
+function startTurn(idx) {
+  const p = eight.queue[idx];
+  if (!p || !['eight', 'pyr'].includes(p.state)) { eight.phase = 'idle'; eight.cur = -1; renderEightHud(); return; }
+  eight.cur = idx; eight.sawBoat = false;
+  if (p.state === 'pyr' && p.swim > 0) {            // gracz płynie – jego tura przechodzi od razu dalej
+    eight.phase = 'moving'; renderEightHud();
+    skipSwimTurn(p);
+    return;
+  }
+  if (p.state === 'pyr' && p.cell && isTop(p.cell)) {   // na szczycie: najpierw wybór – kopać czy rzucać
+    eight.phase = 'moving'; renderEightHud();
+    topActionTurn(p);
+    return;
+  }
+  eight.phase = 'waitRoll'; eight.timer = TURN_TIME;
+  renderEightHud();
+}
+
+function nextTurn(sameAgain) {
+  const q = eight.queue;
+  const on = x => x && (x.state === 'eight' || x.state === 'pyr');
+  if (!q.some(on)) { eight.phase = 'idle'; eight.cur = -1; renderEightHud(); return; }
+  if (sameAgain && on(q[eight.cur])) return startTurn(eight.cur);
+  for (let i = 1; i <= q.length; i++) {
+    const j = (eight.cur + i) % q.length;
+    if (on(q[j])) return startTurn(j);
+  }
+}
+const eightCurrent = () => eight.queue[eight.cur];
+
+function updateEight(dt) {
+  const p = eightCurrent();
+  if (eight.phase === 'waitRoll' && p) {
+    eight.timer -= dt;
+    // gdy ktoś jest na wyspie, na rzut jest tyle czasu, ile zostało do odpłynięcia statku
+    const left = eight.timer;
+    if (!globalThis.__instantDice) doTurn(p, false);         // stół bilardowy pojawia się od razu
+    else if (anyPressed(p.def.keys.hit) || left <= 0) doTurn(p, left <= 0);
+    else renderTimer();
+  } else if (eight.phase === 'choice' && eight.choice) {
+    const c = eight.choice;
+    c.timer -= dt;
+    const k = c.player.def.keys;
+    if (c.options) {
+      const hit = c.options.find(o => anyPressed(k[o.key]));
+      if (hit) c.resolve(hit.value);
+      else if (c.timer <= 0) c.resolve(c.options[Math.floor(Math.random() * c.options.length)].value);
+      else renderTimer();
+    }
+    else if (anyPressed(k.left)) c.resolve('L');
+    else if (anyPressed(k.right)) c.resolve('R');
+    else if (c.timer <= 0) c.resolve(Math.random() < 0.5 ? 'L' : 'R');
+    else renderTimer();
+  } else if (eight.phase === 'billiard') { updateBilliard(dt); renderTimer(); }
+  else if (eight.phase === 'pick') { updatePick(dt); renderTimer(); }
+  else if (eight.phase === 'waitBoat') renderTimer();
+  const t = performance.now() / 1000;
+  for (const pl of plants) if (!pl.biting) {
+    pl.headG.position.y = 1.25 + Math.sin(t * 2 + pl.sway) * 0.07;
+    pl.g.rotation.y = pl.baseRot + Math.sin(t * 0.8 + pl.sway) * 0.12;
+  }
+  for (const pl of plants) pl.warn.material.opacity = 0.55 + Math.sin(t * 6) * 0.3;
+  const fpos = cpFlagGeo.attributes.position;
+  for (let i = 0; i < fpos.count; i++) { const x = cpFlagBase[i * 3]; fpos.array[i * 3 + 2] = Math.sin(x * 9 - t * 6) * 0.05 * x * 2; }
+  fpos.needsUpdate = true;
+  portal.rotation.y += dt * 1.2;
+  chest.rotation.y += dt * 0.6;
+  sparkle.scale.setScalar(1 + Math.sin(t * 3) * 0.12);
+  updateVolcanoes(dt, t);
+  lavaMat.emissiveIntensity = 1.5 + Math.sin(t * 7) * 0.3;
+  for (const l of lavas) l.mesh.scale.set(0.9 + Math.sin(t * 5 + l.i) * 0.05, 0.5, 0.9 + Math.cos(t * 5 + l.j) * 0.05);
+  portalCore.material.opacity = 0.35 + Math.sin(t * 3) * 0.15;
+}
+
+async function nextField(p) {
+  const id = p.at;
+  if (id === 'T') return null;
+  if (id === 'S' || id === 'M') {
+    const dir = await askChoice(p, id);
+    const key = CHOICES[id][dir === 'L' ? 0 : 1];
+    if (id === 'S') p.topSeg = key;
+    return EIGHT_PATHS[key].ids[0];
+  }
+  const f = fieldsE[id], path = EIGHT_PATHS[f.path];
+  if (f.k < path.ids.length) return path.ids[f.k];
+  return path.to;
+}
+
+function segDesc(key) {
+  const g = EIGHT_PATHS[key];
+  return `${g.W === SHORT_W ? 'krótsza' : 'dłuższa'} · ${g.ids.length} pól · 🌿×${g.plants.length}`;
+}
+function askChoice(p, at) {
+  const [kl, kr] = CHOICES[at];
+  const base = fieldsE[at].pos;
+  arrowL.position.set(base.x - 1.4, 1.2, base.z); arrowL.rotation.y = Math.PI;
+  arrowR.position.set(base.x + 1.4, 1.2, base.z); arrowR.rotation.y = 0;
+  arrowL.visible = arrowR.visible = true;
+  showChoice(p, segDesc(kl), segDesc(kr));
+  return new Promise(res => {
+    eight.phase = 'choice';
+    eight.choice = {
+      player: p, timer: CHOICE_TIME, resolve: dir => {
+        eight.choice = null; eight.phase = 'moving';
+        arrowL.visible = arrowR.visible = false;
+        hideChoice();
+        log(`${nameOf(p)} wybiera drogę ${dir === 'L' ? 'w lewo' : 'w prawo'} (${segDesc(dir === 'L' ? kl : kr)}).`, p.def.color);
+        res(dir);
+      }
+    };
+  });
+}
+
+async function moveForward(p, n) {
+  for (let i = 0; i < n; i++) {
+    const nx = await nextField(p);
+    if (!nx) break;
+    await hopTo(p, nx);
+    p.trail.push(nx);
+    if (nx === 'M' && !p.checkpoint) {
+      p.checkpoint = true;
+      log(`🚩 ${nameOf(p)} dotarł do checkpointu! Od teraz roślina i ↺ cofają go tylko na środek.`, p.def.color);
+      bigToast('CHECKPOINT!', '#ffe066');
+    }
+    renderPanel();
+    if (nx === 'T') break;
+  }
+}
+async function moveBack(p, n) {
+  for (let i = 0; i < n && p.trail.length > 1; i++) {
+    if (p.checkpoint && p.at === 'M') break;          // checkpoint zatrzymuje cofanie
+    p.trail.pop();
+    await hopTo(p, p.trail[p.trail.length - 1]);
+    renderPanel();
+  }
+}
+// powrót na START albo – po zdobyciu checkpointu – na środek ósemki
+async function backToStart(p) {
+  if (p.checkpoint) {
+    await flyTo(p, 'M');
+    p.trail = ['S', ...EIGHT_PATHS[p.topSeg].ids, 'M'];
+  } else {
+    await flyTo(p, 'S');
+    p.trail = ['S']; p.topSeg = null;
+  }
+  renderPanel();
+}
+const backName = p => p.checkpoint ? 'checkpoint' : 'początek ósemki';
+
+async function biteAnim(pl, fieldId) {
+  pl.biting = true;
+  const tp = fieldsE[fieldId].pos;
+  const dir = Math.atan2(tp.x - pl.base.x, tp.z - pl.base.z);
+  const dist = Math.hypot(tp.x - pl.base.x, tp.z - pl.base.z);
+  pl.g.rotation.y = dir;
+  await tween(0.5, k => {
+    const d = Math.sin(k * Math.PI);
+    pl.headG.position.set(0, 1.25 + d * 0.2, d * dist * 0.8);
+    pl.headG.scale.setScalar(1 + d * 0.35);
+  });
+  pl.headG.position.set(0, 1.25, 0); pl.headG.scale.setScalar(1);
+  pl.g.rotation.y = pl.baseRot;
+  pl.biting = false;
+}
+
+// czy roślina akurat gryzie pole, na które wszedł gracz?
+async function plantCheck(p) {
+  const pl = plants.find(pl => plantTarget(pl) === p.at);
+  if (!pl) return false;
+  await biteAnim(pl, p.at);
+  log(`🌿 Roślina zjadła: ${nameOf(p)}! Wypluwa go na ${backName(p)}.`, '#9cff9c');
+  bigToast('ZJEDZONY!', '#7dff7d');
+  await backToStart(p);
+  return true;
+}
+
+// koniec rundy (wszyscy gracze na ósemce rzucili): rośliny przełączają się na drugie pole
+async function plantsEndTurn() {
+  for (const pl of plants) pl.ti = 1 - pl.ti;
+  aimPlants();
+}
+
+const EIGHT_DICE = new THREE.Vector3(E.x + 9.5, 0.45, E.z + 7.5);
+const pyrDice = () => new THREE.Vector3(P0.x + 19.5, 1.25, P0.z);
+async function doTurn(p, auto) {
+  eight.phase = 'moving';
+  renderEightHud();
+  let extra = false;
+  if (p.waitSwim) { await p.waitSwim; p.waitSwim = null; }   // dokończ wychodzenie po drabince
+  {
+    const shot = await billiardShot(p);
+    const v = shot.v; auto = auto || shot.auto;
+    p.rollAt = gameTime;
+    log(v === 12 ? `🎱 ${nameOf(p)} wbija kostkę do dziury – 12 pól!` : `🎱 ${nameOf(p)}: kostka pokazuje ${v}${auto ? ' (automatycznie – minął czas)' : ''}.`, p.def.color);
+    bigToast(String(v), p.def.color);
+    await wait(0.2);
+    if (p.state === 'eight') {
+      await moveForward(p, v);
+      if (p.at === 'T') await teleportChoice(p);
+      else extra = await resolveEightField(p);
+    } else if (isTop(p.cell)) {
+      // na szczycie: wybór pola w zasięgu rzutu i pytanie o kopanie
+      if (await topTurn(p, v)) { winGame(p); return; }
+    } else {
+      const before = p.at;
+      await pyrForward(p, v);
+      // pole działa tylko, gdy gracz faktycznie na nie wszedł (lawa mogła go zatrzymać w miejscu)
+      if (!isTop(p.cell) && p.at !== before) extra = await resolvePyrField(p);
+      if (p.state === 'pyr' && p.cell && !isTop(p.cell)) await offerFreeze(p);
+      if (p.cell && isTop(p.cell)) {
+        extra = false;
+        log(`🏔️ ${nameOf(p)} wchodzi na szczyt! Ruch się kończy – w następnej turze: kopać albo rzucać.`, p.def.color);
+        if (await shovelDig(p)) { winGame(p); return; }
+      }
+    }
+  }
+  await endTurn(p, extra, true);
+}
+
+// wspólny koniec tury: spływ lawy (po rzucie), koniec rundy, czekanie na statek, następny gracz
+async function endTurn(p, extra, rolled) {
+  // po każdym rzucie lawa spływa o piętro niżej
+  if (rolled) await lavaTick();
+  // runda kończy się, gdy każdy gracz (ósemka + piramida) wykonał swój ruch
+  if (!extra) eight.rolled.add(p);
+  const active = eight.queue.filter(q => q.state === 'eight' || q.state === 'pyr');
+  if (active.every(q => eight.rolled.has(q))) {
+    eight.rolled.clear();
+    eight.round++;
+    await plantsEndTurn();
+    await pyramidRoundEnd();
+    if (active.length) log(`🔁 Runda ${eight.round}.`, '#c2cbe8');
+  }
+  if (!running) return;
+  // gdy ktoś jest jeszcze na wyspie: na ósemce następny rzut najwcześniej 4 s po rzucie,
+  // na piramidzie 2 s przerwy po skończonej animacji ruchu
+  if (islandActive()) {
+    const delay = p.state === 'eight' ? Math.max(0, 4 - (gameTime - (p.rollAt ?? gameTime))) : 2;
+    if (delay > 0) {
+      eight.phase = 'waitBoat'; eight.pause = delay;
+      renderEightHud();
+      await tween(delay, k => { eight.pause = delay * (1 - k); });
+    }
+  }
+  nextTurn(extra && (p.state === 'eight' || p.state === 'pyr'));
+}
+
+// zwraca true, jeśli gracz ma dodatkowy rzut
+async function resolveEightField(p) {
+  while (true) {
+    if (await plantCheck(p)) return false;          // zjedzony – efekt pola nie działa, koniec tury
+    const f = fieldsE[p.at];
+    if (f.type === 'R') { log(`🔴 ${nameOf(p)} cofa się o 3.`, '#ff8080'); bigToast('-3', '#ff6060'); await wait(0.35); await moveBack(p, 3); continue; }
+    if (f.type === 'G') {
+      log(`🟢 ${nameOf(p)} idzie 2 do przodu.`, '#7de08f'); bigToast('+2', '#5ee07a'); await wait(0.35);
+      await moveForward(p, 2);
+      if (p.at === 'T') { await enterPyramid(p); return false; }
+      continue;
+    }
+    if (f.type === 'Y') { log(`🟡 ${nameOf(p)} wraca na ${backName(p)}!`, '#f3dc6a'); bigToast(p.checkpoint ? 'NA CHECKPOINT!' : 'NA START!', '#f3d64a'); await wait(0.35); await backToStart(p); return false; }
+    if (f.type === 'P') { log(`🟣 ${nameOf(p)} rzuca jeszcze raz!`, '#d59cff'); bigToast('DODATKOWY RZUT!', '#d08cff'); return true; }
+    if (f.type === 'B') log(`🔵 Niebieskie pole – nic się nie dzieje.`, '#8cb8ff');
+    return false;
+  }
+}
+
+
+// ---------- HUD ósemki ----------
+function renderEightHud() {
+  const hud = document.getElementById('eightHud');
+  const p = eightCurrent();
+  if (!p || eight.phase === 'idle') { hud.innerHTML = '<b>🎲 Plansza</b><div class="sub">Czekamy na graczy…</div>'; return; }
+  hud.innerHTML = `<b>${p.state === 'pyr' ? '🔺 Piramida' : '🎲 Ósemka'}</b>
+    <div class="sub">Runda ${eight.round}${players.some(q => q.state === 'pyr') ? ` · 🌋 wybuch za ${roundsToEruption()} ${roundsToEruption() === 1 ? 'rundę' : 'rundy'}` : ''}</div>
+    <div class="turnline"><span class="dot" style="background:${p.def.color}"></span>Ruch: <b>${nameOf(p)}</b></div>
+    <div id="eightTimer" class="sub"></div>`;
+  renderTimer();
+}
+function renderTimer() {
+  const el = document.getElementById('eightTimer');
+  if (!el) return;
+  const p = eightCurrent();
+  if (eight.phase === 'waitBoat') el.innerHTML = `⏳ Następny ruch za ${Math.ceil(eight.pause || 0)} s`;
+  else if (eight.phase === 'waitRoll') el.innerHTML = `Rzuć kostką: <b>${p.def.hitLabel}</b> · ⏱ ${Math.ceil(eight.timer)} s`;
+  else if (eight.phase === 'billiard') el.innerHTML = `🎱 Celuj: <b>${keyName(p.def.keys.left[0])}/${keyName(p.def.keys.right[0])}</b> · siła: przytrzymaj i puść <b>${p.def.hitLabel}</b> · ⏱ ${Math.ceil(Math.max(0, eight.timer))} s`;
+  else if (eight.phase === 'pick' && eight.pick) el.innerHTML = `Wybierz pole na szczycie · ⏱ ${Math.ceil(eight.pick.timer)} s`;
+  else if (eight.phase === 'choice' && eight.choice) el.innerHTML = `${eight.choice.options ? (eight.choice.options[0].value === 'dig' ? 'Kopiesz czy rzucasz?' : 'Wybierz róg') : 'Wybierz drogę'} · ⏱ ${Math.ceil(eight.choice.timer)} s`;
+  else el.innerHTML = 'Ruch…';
+}
+function keyName(code) {
+  if (typeof net !== 'undefined' && net.mode !== 'local') {
+    const a = Object.values(PLAYER_DEFS).map(d => Object.entries(d.keys).find(([, cs]) => cs.includes(code))).find(Boolean);
+    if (a) return { up: 'W/↑', down: 'S/↓', left: 'A/←', right: 'D/→', hit: 'Spacja' }[a[0]];
+  }
+  return code.replace('Key', '').replace('ArrowLeft', '←').replace('ArrowRight', '→').replace('Numpad', 'Num ');
+}
+function showChoice(p, l, r) {
+  const el = document.getElementById('choiceBox');
+  el.innerHTML = `<div style="color:${p.def.color};font-weight:800">${nameOf(p)}: wybierz drogę</div>
+    <div class="cbtns"><button id="chL">⬅ W lewo <small>[${keyName(p.def.keys.left[0])}]</small><br><span>${l}</span></button>
+    <button id="chR">W prawo ➡ <small>[${keyName(p.def.keys.right[0])}]</small><br><span>${r}</span></button></div>`;
+  el.style.display = 'block';
+  document.getElementById('chL').onclick = () => eight.choice && eight.choice.resolve('L');
+  document.getElementById('chR').onclick = () => eight.choice && eight.choice.resolve('R');
+}
+function hideChoice() { const el = document.getElementById('choiceBox'); if (el) el.style.display = 'none'; }
+let toastTimer;
+function bigToast(text, color) {
+  const t = document.getElementById('toast');
+  t.textContent = text; t.style.color = color;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 900);
+}
+
+// ============================================================
+// ETAP 3: PIRAMIDA
+// ============================================================
+// Siatka 14×14 pól. Piętro = pierścień (1 – zewnętrzny 14×14 … 5 – najwyższy 6×6), w środku skarb (4×4).
+// Na każdym piętrze idzie się zgodnie z ruchem wskazówek zegara (patrząc z góry).
+// Schody leżą jedno pole PRZED rogiem lewym‑górnym i prawym‑dolnym i prowadzą na róg wyższego piętra,
+// więc po wejściu na piętro nie stoi się od razu przy kolejnych schodach.
+const P0 = new THREE.Vector3(46, 0, 25);     // środek piramidy – prawa połowa mapy
+const PN = 14, PC = 2.2, PH = 0.8;           // liczba pól w boku, rozmiar pola, wysokość piętra
+const HALL = 5;                              // wysokość hali pod piramidą (tam leży ósemka)
+const PMID = (PN - 1) / 2;
+const FLOORS = 5;
+const ringOf = (i, j) => Math.min(i, j, PN - 1 - i, PN - 1 - j);   // 0 = parter
+const floorOf = (i, j) => ringOf(i, j) + 1;                           // 1..5, 6 = skarb
+const keyP = (i, j) => `P${i},${j}`;
+const isTreasure = (i, j) => ringOf(i, j) >= FLOORS;
+function isStair(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  if (r >= FLOORS) return false;
+  if ((i === r && j === r + 1) || (i === m && j === m - 1)) return true;           // przy rogu LG i PD
+  // na parterze dodatkowo przy rogu PG i LD (też jedno pole przed rogiem)
+  return r === 0 && ((j === r && i === m - 1) || (j === m && i === r + 1));
+}
+function isCorner(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  return (i === r || i === m) && (j === r || j === m);
+}
+// następne pole zgodnie z ruchem wskazówek zegara na tym samym piętrze
+function nextCW(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  if (j === r && i < m) return [i + 1, j];
+  if (i === m && j < m) return [i, j + 1];
+  if (j === m && i > r) return [i - 1, j];
+  return [i, j - 1];
+}
+function prevCW(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  if (j === r && i > r) return [i - 1, j];
+  if (i === r && j < m) return [i, j + 1];
+  if (j === m && i < m) return [i + 1, j];
+  return [i, j - 1];
+}
+// schody prowadzą do środka piramidy, na róg wyższego piętra
+function upStair(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  if (i === r) return [i + 1, j];
+  if (i === m) return [i - 1, j];
+  if (j === r) return [i, j + 1];
+  return [i, j - 1];
+}
+// pole piętro niżej, „na zewnątrz” (tam spycha tłok i spływa lawa); null = woda
+function outward(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  let di = 0, dj = 0;
+  if (i === r) di = -1; else if (i === m) di = 1;
+  if (j === r) dj = -1; else if (j === m) dj = 1;
+  const ni = i + di, nj = j + dj;
+  if (ni < 0 || nj < 0 || ni >= PN || nj >= PN) return null;
+  return [ni, nj];
+}
+function cellPos(i, j, extraY = 0) {
+  const f = isTreasure(i, j) ? FLOORS + 1 : floorOf(i, j);
+  return new THREE.Vector3(P0.x + (i - PMID) * PC, HALL + f * PH + 0.05 + extraY, P0.z + (j - PMID) * PC);
+}
+const CORNERS = { TL: [0, 0], TR: [PN - 1, 0], BR: [PN - 1, PN - 1], BL: [0, PN - 1] };
+const CORNER_NAMES = { TL: 'lewy górny', TR: 'prawy górny', BR: 'prawy dolny', BL: 'lewy dolny' };
+const ENTRY_CORNERS = ['BL', 'TR'];          // dwa teleporty: lewy dolny i prawy górny róg
+
+// ściana pola na jego piętrze: 0 = północna, 1 = wschodnia, 2 = południowa, 3 = zachodnia (rogi: -1)
+function wallInRing(i, j) {
+  const r = ringOf(i, j), m = PN - 1 - r;
+  if (isCorner(i, j)) return -1;
+  return j === r ? 0 : i === m ? 1 : j === m ? 2 : 3;
+}
+// pola jednej ściany (bez rogów) w kolejności ruchu
+function wallCells(f, w) {
+  const r = f - 1, out = [];
+  let c = [r, r];
+  do { if (wallInRing(...c) === w) out.push(c); c = nextCW(...c); } while (!(c[0] === r && c[1] === r));
+  return out;
+}
+// tłoki: na każdej ścianie 3 (parter), 2 (piętra 2–4), 1 (5. piętro) – rozłożone równo, bez schodów,
+// a na kolejnych piętrach przesunięte, żeby nie stały jeden nad drugim
+// Tłok nigdy nie stoi nad tłokiem z niższego piętra – ani dokładnie nad nim, ani ukośnie obok
+// (wzdłuż ściany odstęp co najmniej 2 pola). Tłoki na jednej ścianie też nie stoją obok siebie.
+const PISTONS_PER_WALL = { 1: 2, 2: 2, 3: 2, 4: 2, 5: 1 };
+const PISTON_CELLS = [];
+{
+  const along = (c, w) => (w === 0 || w === 2) ? c[0] : c[1];
+  const combos = (arr, n, start = 0) => n === 0 ? [[]] : arr.slice(start).flatMap((x, k) => combos(arr, n - 1, start + k + 1).map(rest => [x, ...rest]));
+  for (let f = 1; f <= FLOORS; f++) PISTON_CELLS.push([]);
+  for (let w = 0; w < 4; w++) {
+    // dla każdego piętra: możliwe układy tłoków na tej ścianie, od najrówniej rozłożonych
+    const opts = [];
+    for (let f = 1; f <= FLOORS; f++) {
+      const all = wallCells(f, w), cells = all.filter(c => !isStair(...c));
+      const lo = along(all[0], w), hi = along(all[all.length - 1], w);
+      opts.push(combos(cells, PISTONS_PER_WALL[f]).map(cb => {
+        const a = cb.map(c => along(c, w)).sort((x, y) => x - y);
+        const gaps = [a[0] - lo + 1, ...a.slice(1).map((x, k) => x - a[k]), hi - a[a.length - 1] + 1];
+        return { cb, a, ok: a.every((x, k) => k === 0 || x - a[k - 1] >= 2), spread: Math.max(...gaps) - Math.min(...gaps) };
+      }).filter(o => o.ok).sort((x, y) => x.spread - y.spread));
+    }
+    // szukanie z powrotami: każde piętro odsunięte od tłoków piętro niżej – najlepiej o 2 pola
+    // (ani nad, ani ukośnie), a gdzie przez schody się nie da, to przynajmniej nie dokładnie nad nim
+    const pick = [];
+    let minD = 2;
+    const far = (o, prev) => !prev || o.a.every(x => prev.a.every(y => Math.abs(x - y) >= minD));
+    const dfs = f => {
+      if (f === FLOORS) return true;
+      for (const o of opts[f]) if (far(o, pick[f - 1])) { pick[f] = o; if (dfs(f + 1)) return true; }
+      return false;
+    };
+    if (!dfs(0)) { minD = 1; if (!dfs(0)) for (let f = 0; f < FLOORS; f++) pick[f] = opts[f][0]; }
+    pick.forEach((o, f) => PISTON_CELLS[f].push(...o.cb));
+  }
+}
+const pistons = [];
+for (const floor of PISTON_CELLS) for (const [i, j] of floor) pistons.push({ i, j, k: keyP(i, j) });
+const pistonAt = new Map(pistons.map(p => [p.k, p]));
+
+// ---------- grafika ----------
+const pyrGroup = new THREE.Group();
+scene.add(pyrGroup);
+const sandMat = std('#d8b878', { roughness: 0.85 });
+const sandDark = std('#b8955a', { roughness: 0.9 });
+for (let f = 1; f <= FLOORS + 1; f++) {
+  const side = (PN - 2 * (f - 1)) * PC;
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(side, PH, side), f % 2 ? sandMat : sandDark);
+  slab.position.set(P0.x, HALL + (f - 0.5) * PH, P0.z);
+  slab.castShadow = slab.receiveShadow = true;
+  pyrGroup.add(slab);
+}
+// podstawa w wodzie
+// kamienny cokół, na którym stoi piramida
+const HS = PN * PC;
+const plinth = new THREE.Mesh(new THREE.BoxGeometry(HS, HALL + 0.6, HS), std('#c9a86a', { roughness: 0.9 }));
+plinth.position.set(P0.x, HALL / 2 - 0.3, P0.z);
+plinth.castShadow = plinth.receiveShadow = true;
+pyrGroup.add(plinth);
+// drabinki w czterech rogach – stąd wychodzi się z wody na parter piramidy
+const ladders = {};
+for (const [name, [ci, cj]] of Object.entries(CORNERS)) {
+  const sx = ci === 0 ? -1 : 1, sz = cj === 0 ? -1 : 1;
+  const g = new THREE.Group();
+  const H = HALL + PH + 0.4;
+  const railMat = std('#7a5230');
+  for (const o of [-0.35, 0.35]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, H, 0.1), railMat);
+    rail.position.set(o, H / 2 - 0.45, 0); g.add(rail);
+  }
+  for (let y = 0; y < H - 0.6; y += 0.45) {
+    const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7, 6), railMat);
+    rung.rotation.z = Math.PI / 2; rung.position.set(0, y, 0); g.add(rung);
+  }
+  g.position.set(P0.x + sx * (HS / 2 + 0.25), 0, P0.z + sz * (HS / 2 + 0.25));
+  g.rotation.y = Math.atan2(sx, sz) + Math.PI / 4;
+  pyrGroup.add(g);
+  ladders[name] = { bottom: new THREE.Vector3(P0.x + sx * (HS / 2 + 1.0), -0.35, P0.z + sz * (HS / 2 + 1.0)), top: new THREE.Vector3(P0.x + sx * (HS / 2 + 0.3), HALL + PH + 0.1, P0.z + sz * (HS / 2 + 0.3)) };
+}
+
+// typy pól piramidy: B zwykłe, S schody, P 🎲, '+1' '+2' do przodu, '-1' '-2' '-3' do tyłu
+const PTYPE_COLOR = { Q: '#f2c94c', B: '#e9d9a6', '+1': '#9be3a6', '+2': '#43c45c', '-1': '#f4a9a9', '-2': '#ea7070', '-3': '#d63c3c', P: '#a95be0', S: '#8f8f96' };
+const isMove = t => /^[+-]\d$/.test(t);
+const pyrTileMats = {};
+const pyrMat = t => pyrTileMats[t] || (pyrTileMats[t] = std(PTYPE_COLOR[t], { roughness: 0.6 }));
+const pyrCells = {};      // klucz -> { i, j, type, mesh, label }
+const pyrTileGeo = new RoundedBoxGeometry(PC - 0.1, 0.08, PC - 0.1, 2, 0.04);
+const labelCache = {};
+function pyrLabelTex(txt) {
+  if (labelCache[txt]) return labelCache[txt];
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'); g.scale(2, 2);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `900 ${txt.length > 2 ? 46 : 64}px Segoe UI, Segoe UI Emoji, sans-serif`;
+  g.lineWidth = 7; g.strokeStyle = 'rgba(255,255,255,.7)'; g.strokeText(txt, 64, 68);
+  g.fillStyle = '#1d1a22'; g.fillText(txt, 64, 68);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = MAX_ANISO;
+  return (labelCache[txt] = t);
+}
+function hazardTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f2c230'; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = '#1d1d1d';
+  for (let k = -128; k < 256; k += 32) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + 16, 0); g.lineTo(k + 144, 128); g.lineTo(k + 128, 128); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const hazardMat = new THREE.MeshStandardMaterial({ map: hazardTex(), roughness: 0.6 });
+for (let i = 0; i < PN; i++) for (let j = 0; j < PN; j++) {
+  if (isTreasure(i, j)) continue;
+  const k = keyP(i, j);
+  const p = cellPos(i, j);
+  const stair = isStair(i, j);
+  const mesh = new THREE.Mesh(pyrTileGeo, pistonAt.has(k) ? hazardMat : pyrMat(stair ? 'S' : 'B'));
+  mesh.position.set(p.x, p.y - 0.04, p.z);
+  mesh.receiveShadow = true;
+  pyrGroup.add(mesh);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(PC * 0.8, PC * 0.8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+  label.rotation.x = -Math.PI / 2; label.position.set(p.x, p.y + 0.01, p.z);
+  pyrGroup.add(label); groundLabels.push(label);
+  pyrCells[k] = { i, j, type: stair ? 'S' : 'B', mesh, label };
+  if (stair) {
+    // schodki prowadzące na wyższe piętro
+    const [ui, uj] = upStair(i, j);
+    const dir = new THREE.Vector3(ui - i, 0, uj - j).normalize();
+    for (let s = 0; s < 3; s++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(0.6, PH / 3 * (s + 1), 0.6), std('#a3a3ab'));
+      step.position.set(p.x + dir.x * (0.15 + s * 0.22) * PC, p.y - 0.05 + PH / 6 * (s + 1), p.z + dir.z * (0.15 + s * 0.22) * PC);
+      step.rotation.y = Math.PI / 4;
+      step.castShadow = true;
+      pyrGroup.add(step);
+    }
+  }
+}
+// tłoki: blok w ścianie wyższego piętra, wysuwa się nad pole i spycha w dół
+for (const ps of pistons) {
+  const r = ringOf(ps.i, ps.j), m = PN - 1 - r;
+  const dir = new THREE.Vector3(ps.i === r ? -1 : ps.i === m ? 1 : 0, 0, ps.j === r ? -1 : ps.j === m ? 1 : 0);
+  const p = cellPos(ps.i, ps.j);
+  const g = new THREE.Group();
+  const head = new THREE.Mesh(new THREE.BoxGeometry(dir.x ? 0.3 : PC * 0.8, PH * 0.75, dir.z ? 0.3 : PC * 0.8), std('#6f7680', { metalness: 0.7, roughness: 0.35 }));
+  head.castShadow = true;
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, PC, 8), std('#c8ccd2', { metalness: 0.9, roughness: 0.2 }));
+  rod.rotation.set(dir.z ? Math.PI / 2 : 0, 0, dir.x ? Math.PI / 2 : 0);
+  rod.position.set(-dir.x * PC / 2, 0, -dir.z * PC / 2);
+  g.add(head, rod);
+  ps.home = new THREE.Vector3(p.x - dir.x * PC * 0.5, p.y + PH * 0.4, p.z - dir.z * PC * 0.5);
+  ps.dir = dir;
+  g.position.copy(ps.home);
+  pyrGroup.add(g);
+  ps.mesh = g;
+}
+// skarb na szczycie
+const chest = new THREE.Group();
+const chestBox = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.5, 0.65, 2, 0.06), std('#8a5a2b'));
+const chestLid = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.9, 16, 1, false, 0, Math.PI), std('#9b6a33'));
+chestLid.rotation.z = Math.PI / 2; chestLid.position.y = 0.25;
+const chestBand = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.12, 0.7), goldMat);
+chestBand.position.y = 0.05;
+const gold = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshStandardMaterial({ color: '#ffd84a', emissive: '#ffb300', emissiveIntensity: 1.2, metalness: 1, roughness: 0.2 }));
+gold.position.set(0, 0.45, 0.1);
+chest.add(chestBox, chestLid, chestBand, gold);
+chest.position.set(P0.x, HALL + (FLOORS + 1) * PH + 0.3, P0.z);
+pyrGroup.add(chest);
+const sparkle = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.04, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0.7 }));
+sparkle.rotation.x = -Math.PI / 2; sparkle.position.set(P0.x, HALL + (FLOORS + 1) * PH + 0.1, P0.z);
+pyrGroup.add(sparkle);
+
+// wulkany w wodzie przy rogach (wysokie, skaliste, z żarzącym się kraterem i dymem)
+const volcGroup = new THREE.Group();
+scene.add(volcGroup);
+function smokeTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+  gr.addColorStop(0, 'rgba(90,90,90,0.9)'); gr.addColorStop(1, 'rgba(90,90,90,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const smokeMap = smokeTex();
+const volcanoes = {};
+const VH = 9;                                   // wysokość wulkanu
+const volcProfile = [[4.6, 0], [4.2, 0.8], [3.4, 2.4], [2.6, 4.4], [1.8, 6.6], [1.35, VH], [1.0, VH - 0.25], [0.7, VH - 0.9]].map(([r, y]) => new THREE.Vector2(r, y));
+const volcGeo = new THREE.LatheGeometry(volcProfile, 28);
+{ // nierówne zbocza
+  const p = volcGeo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const n = Math.sin(p.getX(i) * 3.1 + p.getZ(i) * 2.3) * 0.18 + Math.cos(p.getY(i) * 2.7 + p.getX(i)) * 0.12; p.setX(i, p.getX(i) * (1 + n * 0.2)); p.setZ(i, p.getZ(i) * (1 + n * 0.2)); }
+  volcGeo.computeVertexNormals();
+}
+for (const [name, [ci, cj]] of Object.entries(CORNERS)) {
+  const sx = ci === 0 ? -1 : 1, sz = cj === 0 ? -1 : 1;
+  const pos = new THREE.Vector3(P0.x + sx * (PMID * PC + 6.5), -0.5, P0.z + sz * (PMID * PC + 6.5));
+  const g = new THREE.Group();
+  const cone = new THREE.Mesh(volcGeo, std('#3e2620', { roughness: 0.95, flatShading: true }));
+  cone.castShadow = true;
+  const crater = new THREE.Mesh(new THREE.CircleGeometry(0.85, 20), new THREE.MeshStandardMaterial({ color: '#ff6a00', emissive: '#ff4500', emissiveIntensity: 2.2 }));
+  crater.rotation.x = -Math.PI / 2; crater.position.y = VH - 0.6;
+  // strużki zastygłej lawy na zboczach
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2 + 0.4;
+    const streak = new THREE.Mesh(new THREE.BoxGeometry(0.35, VH * 0.7, 0.12), new THREE.MeshStandardMaterial({ color: '#ff5a00', emissive: '#ff3300', emissiveIntensity: 1.2 }));
+    streak.position.set(Math.cos(a) * 2.2, VH * 0.55, Math.sin(a) * 2.2);
+    streak.rotation.set(0, -a, 0); streak.rotateZ(Math.atan2(2.6, VH)); streak.rotateX(0.32);
+    g.add(streak);
+  }
+  const smoke = [];
+  for (let k = 0; k < 7; k++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeMap, transparent: true, depthWrite: false, opacity: 0.6 }));
+    sp.userData.t = k / 7;
+    g.add(sp); smoke.push(sp);
+  }
+  g.add(cone, crater);
+  g.position.copy(pos);
+  volcGroup.add(g);
+  volcanoes[name] = { g, top: pos.clone().setY(VH), crater, smoke };
+}
+// skała, na której leży kostka przy piramidzie
+const diceRock = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.6, 2.2, 10), std('#6b5a48', { roughness: 0.95, flatShading: true }));
+diceRock.position.set(P0.x + 19.5, -0.3, P0.z);
+volcGroup.add(diceRock);
+// iskry przy wybuchu
+const embers = [];
+const emberMat = new THREE.SpriteMaterial({ color: '#ffb347', transparent: true, opacity: 0.95 });
+function emberBurst(v) {
+  netEvent({ e: 'embers', v: Object.keys(volcanoes).find(k => volcanoes[k] === v) });
+  for (let k = 0; k < 18; k++) {
+    const sp = new THREE.Sprite(emberMat);
+    sp.scale.setScalar(0.35);
+    sp.position.copy(v.top);
+    const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 4;
+    sp.userData.v = new THREE.Vector3(Math.cos(a) * s, 8 + Math.random() * 6, Math.sin(a) * s);
+    sp.userData.life = 1.6;
+    volcGroup.add(sp); embers.push(sp);
+  }
+}
+function updateVolcanoes(dt, t) {
+  for (const v of Object.values(volcanoes)) {
+    v.crater.material.emissiveIntensity = 1.8 + Math.sin(t * 4 + v.top.x) * 0.6;
+    for (const sp of v.smoke) {
+      sp.userData.t = (sp.userData.t + dt * 0.12) % 1;
+      const k = sp.userData.t;
+      sp.position.set(Math.sin(k * 6 + v.top.z) * 0.8 * k, VH + k * 7, Math.cos(k * 5) * 0.6 * k);
+      sp.scale.setScalar(1.2 + k * 4);
+      sp.material.opacity = 0.55 * (1 - k);
+    }
+  }
+  for (const e of [...embers]) {
+    e.userData.life -= dt;
+    e.userData.v.y -= 14 * dt;
+    e.position.addScaledVector(e.userData.v, dt);
+    if (e.userData.life <= 0) { volcGroup.remove(e); embers.splice(embers.indexOf(e), 1); }
+  }
+}
+// znaczniki rogów, na które prowadzą teleporty
+for (const name of ENTRY_CORNERS) {
+  const [ci, cj] = CORNERS[name];
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 24), new THREE.MeshBasicMaterial({ color: '#7fe8ff', transparent: true, opacity: 0.8 }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.copy(cellPos(ci, cj, 0.02));
+  pyrGroup.add(ring);
+}
+
+// ---------- stan piramidy ----------
+const lavaMat = new THREE.MeshStandardMaterial({ color: '#ff5a00', emissive: '#ff3300', emissiveIntensity: 1.6, roughness: 0.4 });
+const lavaGeo = new THREE.SphereGeometry(0.5, 14, 10);
+let lavas = [];               // pojedyncze pola z lawą: { i, j, mesh, stream }
+let streams = [];             // strumienie: { cells: [pola od miejsca upadku w dół], inWater }
+const lavaAt = (i, j) => lavas.find(l => l.i === i && l.j === j);
+let pyrWinner = null;
+let volcanoTimer = 0;                         // rundy od ostatniego wybuchu
+let pyrStarted = false;                       // czy ktoś już wylądował na piramidzie (pierwszy wybuch)
+const eruptionEvery = () => players.length * 2;
+const roundsToEruption = () => Math.max(0, eruptionEvery() - volcanoTimer);
+
+function randomizePyramid() {
+  // pola specjalne [+2, -3, 🎲] na piętrach 1..5
+  // na każdej ścianie piętra 1..5: 4/4/3/2/1 pól +/- (każdy rodzaj min. 1 raz na piętrze) i 1 pole 🎲 (piętra 1–4)
+  // łączna liczba pól +/- na piętrze i ile najwięcej może być jednego rodzaju (każdy rodzaj min. 1)
+  // na każdej ścianie: 4/4/3/2/1 pól +/- (piętra 1..5) i 1 pole 🎲 (piętra 1–4)
+  const PER_WALL = { 1: 4, 2: 4, 3: 3, 4: 2, 5: 1 };
+  const TOTAL = { 1: 16, 2: 16, 3: 12, 4: 8, 5: 4 }, MAXEACH = { 1: 5, 2: 5, 3: 5, 4: 5, 5: 1 };
+  const moveCounts = f => {
+    const kinds = ['+1', '+2', '-1', '-2', '-3'];
+    if (TOTAL[f] < kinds.length) return kinds.sort(() => Math.random() - 0.5).slice(0, TOTAL[f]);   // 5. piętro: 4 różne
+    const cnt = Object.fromEntries(kinds.map(k => [k, 1]));
+    for (let left = TOTAL[f] - kinds.length; left > 0; left--) {
+      const free = kinds.filter(k => cnt[k] < MAXEACH[f]);
+      cnt[free[Math.floor(Math.random() * free.length)]]++;
+    }
+    return kinds.flatMap(k => Array(cnt[k]).fill(k));
+  };
+  const DICE = { 1: 4, 2: 4, 3: 4, 4: 4, 5: 0 };
+  // podział po równo na rodzaje (kolejność rodzajów losowa, więc reszta trafia raz tu, raz tam)
+  const split = (n, kinds) => { const out = []; for (let a = 0; a < n; a++) out.push(kinds[a % kinds.length]); return out; };
+  for (const c of Object.values(pyrCells)) if (c.type !== 'S') c.type = 'B';
+  const special = new Map();     // pola specjalne już rozstawione (wszystkie piętra): klucz → typ
+  for (let f = 1; f <= FLOORS; f++) {
+    // kolejność pól na pierścieniu (zgodnie z ruchem wskazówek zegara)
+    const r = f - 1, ring = [];
+    let c = [r, r];
+    do { ring.push(c); c = nextCW(...c); } while (!(c[0] === r && c[1] === r));
+    const usable = idx => { const [i, j] = ring[idx]; return !isCorner(i, j) && !isStair(i, j) && !pistonAt.has(keyP(i, j)); };
+    const nItems = TOTAL[f] + DICE[f] + 1;     // + jedno pole „?”
+    const wallOf = idx => wallInRing(...ring[idx]);
+    // Rozstawianie: pole +/- może prowadzić na inne pole specjalne, pole z plusem także na tłok
+    // (z minusem nie), i nie może powstać pętla (np. 8: +1 → 9: -1 → 8 …). Pola specjalne staramy się rozsunąć.
+    // Jeśli się nie da, pól +/- jest po prostu mniej (🎲 zawsze wchodzą).
+    // „złe” pole na drodze: minus albo tłok. W każdych 6 kolejnych polach (tyle, ile sięga kostka)
+    // mogą być najwyżej 3 złe pola i najwyżej 2 minusy – zawsze jest co najmniej połowa dobrych rzutów.
+    const L = ring.length;
+    const isMinusAt = (idx, typeMap) => { const tt = typeMap.get(keyP(...ring[(idx + L) % L])); return !!tt && tt.startsWith('-'); };
+    const isPistonAt = idx => pistonAt.has(keyP(...ring[(idx + L) % L]));
+    const windowOk = (idx, typeMap) => {
+      for (let s0 = idx - 5; s0 <= idx; s0++) {
+        let minus = 0, bad = 0;
+        for (let d = 0; d < 6; d++) {
+          const q = s0 + d;
+          const m = q === idx || isMinusAt(q, typeMap);
+          if (m) minus++;
+          if (m || isPistonAt(q)) bad++;
+        }
+        if (minus > 2 || bad > 3) return false;
+      }
+      return true;
+    };
+    const ok = (t, idx, typeMap) => {
+      const k = keyP(...ring[idx]);
+      if (t === 'P' || t === 'Q') return true;
+      if (t.startsWith('-') && !windowOk(idx, typeMap)) return false;
+      const lk = keyP(...pyrLanding(ring[idx], parseInt(t, 10)));
+      if (lk === k) return false;
+      if (t.startsWith('-') && pistonAt.has(lk)) return false;      // minus nigdy na tłok
+      // przejdź łańcuchem +/- od nowego pola – jeśli wrócimy na odwiedzone pole, to pętla
+      const seen = new Set([k]);
+      let cur = lk;
+      for (let n = 0; n < 16; n++) {
+        if (seen.has(cur)) return false;
+        seen.add(cur);
+        const tt = typeMap.get(cur);
+        if (!tt || !isMove(tt)) return true;
+        const c = pyrCells[cur];
+        cur = keyP(...pyrLanding([c.i, c.j], parseInt(tt, 10)));
+      }
+      return false;
+    };
+    let best = null, bestScore = -1;
+    const perfect = () => best && best.length === nItems && best.subs === 0;
+    for (let gap = 2; gap >= 0 && !perfect(); gap--) {
+      for (let tries = 0; tries < 30; tries++) {
+        const taken = new Set(), placed = [];
+        const typeMap = new Map(special);
+        // najpierw 🎲, potem po jednym polu każdego rodzaju (żeby każdy był co najmniej raz), potem reszta losowo
+        // każde pole ma przydzieloną ścianę: po PER_WALL pól +/- i po jednym 🎲 na ścianę
+        const mv = moveCounts(f).sort(() => Math.random() - 0.5).map((t, n) => ({ t, w: Math.floor(n / PER_WALL[f]) }));
+        const firsts = [];
+        for (const k of ['+1', '+2', '-1', '-2', '-3'].sort(() => Math.random() - 0.5)) { const e = mv.find(o => o.t === k); if (e) firsts.push(e); }
+        const rest = mv.filter(o => !firsts.includes(o)).sort(() => Math.random() - 0.5);
+        const order = [...Array(DICE[f] ? 4 : 0).keys()].map(w => ({ t: 'P', w })).concat([{ t: 'Q', w: Math.floor(Math.random() * 4) }], firsts, rest);
+        const cnt = {};
+        for (let { t, w } of order) {
+          const find = tt => [...ring.keys()].filter(idx => wallOf(idx) === w && usable(idx) && !taken.has(idx) && ok(tt, idx, typeMap) &&
+            [...Array(2 * gap + 1).keys()].every(d => !taken.has((idx + d - gap + ring.length) % ring.length)));
+          let cands = find(t);
+          // minus się nie mieści (za dużo złych pól obok) – zamiast niego wchodzi plus
+          if (!cands.length && t.startsWith('-') && placed.some(pp => pp[1] === t)) for (const alt of ['+1', '+2'].sort(() => Math.random() - 0.5)) {
+            if ((cnt[alt] || 0) + order.filter(o => o.t === alt).length >= MAXEACH[f]) continue;
+            cands = find(alt); if (cands.length) { t = alt; cnt[alt] = (cnt[alt] || 0) + 1; break; }
+          }
+          if (!cands.length) continue;
+          const idx = cands[Math.floor(Math.random() * cands.length)];
+          taken.add(idx); placed.push([idx, t]);
+          typeMap.set(keyP(...ring[idx]), t);
+        }
+        placed.subs = Object.values(cnt).reduce((a, b) => a + b, 0);
+        const score = placed.length * 10 - placed.subs;
+        if (score > bestScore) { best = placed; bestScore = score; }
+        if (perfect()) break;
+      }
+    }
+    for (const [idx, t] of best) {
+      const k = keyP(...ring[idx]);
+      pyrCells[k].type = t; special.set(k, t);
+    }
+  }
+  paintPyramidCells();
+  lavas.forEach(l => { pyrGroup.remove(l.mesh); if (l.link) pyrGroup.remove(l.link); });
+  lavas = []; streams = [];
+  pyrWinner = null;
+  volcanoTimer = 0;
+  pyrStarted = false;
+}
+function paintPyramidCells() {
+  for (const [k, c] of Object.entries(pyrCells)) {
+    if (!pistonAt.has(k)) c.mesh.material = pyrMat(c.type);
+    const txt = isMove(c.type) ? c.type : c.type === 'P' ? '🎲' : c.type === 'Q' ? '?' : null;
+    c.label.material.map = txt ? pyrLabelTex(txt) : null;
+    c.label.material.userData.baseOpacity = txt ? 1 : 0;
+    c.label.material.opacity = txt ? 1 : 0;
+    c.label.material.needsUpdate = true;
+  }
+  if (typeof pyrMats !== 'undefined') pyrMats = null;     // nowe materiały pól – odśwież listę do przezroczystości
+}
+
+// ---------- ruch po piramidzie ----------
+// gdzie wyląduje gracz z pola o przesunięciu n (+ do przodu ze schodami, - do tyłu po tym samym piętrze)
+function pyrLanding(cell, n) {
+  let c = cell.slice();
+  if (n > 0) for (let s = 0; s < n && !isTreasure(...c); s++) c = isStair(...c) ? upStair(...c) : nextCW(...c);
+  else for (let s = 0; s < -n; s++) c = prevCW(...c);
+  return c;
+}
+function setPyrCell(p, i, j) { p.cell = [i, j]; p.at = keyP(i, j); }
+async function hopToCell(p, i, j, dur = 0.28) {
+  const from = new THREE.Vector3(p.x, p.y, p.z), to = cellPos(i, j);
+  p.facing = Math.atan2(to.x - from.x, to.z - from.z);
+  p.anim = true;
+  await tween(dur, k => {
+    const e = ease(k);
+    p.x = from.x + (to.x - from.x) * e; p.z = from.z + (to.z - from.z) * e;
+    p.y = from.y + (to.y - from.y) * e + Math.sin(k * Math.PI) * 0.55;
+  });
+  p.x = to.x; p.y = to.y; p.z = to.z; p.anim = false;
+  setPyrCell(p, i, j);
+}
+// jeden krok do przodu: schody (jeśli już szedł po tym piętrze) albo następne pole w prawo
+function pyrNext(p) {
+  const [i, j] = p.cell;
+  if (isStair(i, j)) return { cell: upStair(i, j), climb: true };
+  return { cell: nextCW(i, j), climb: false };
+}
+async function pyrForward(p, n) {
+  for (let s = 0; s < n; s++) {
+    const nx = pyrNext(p);
+    if (lavaAt(...nx.cell) && p.water > 0 &&
+        await askTwo(p, `🔥 Lawa blokuje drogę (zostało ${n - s} ${n - s === 1 ? 'pole' : 'pól'} ruchu). Gasisz ją? (masz 💧${p.water})`, '💧 Gaszę lawę', 'Nie, czekam')) {
+      await extinguish(p, nx.cell);
+    }
+    if (lavaAt(...nx.cell)) {
+      log(`🔥 Lawa blokuje drogę – ${nameOf(p)} musi poczekać, aż spłynie.`, '#ffa060');
+      bigToast('LAWA!', '#ff7a2a');
+      break;
+    }
+    p.trail.push(p.cell.slice());
+    const from = p.cell.slice();
+    const other = isTreasure(...nx.cell) && players.find(q => q !== p && q.state === 'pyr' && q.cell && q.cell[0] === nx.cell[0] && q.cell[1] === nx.cell[1]);
+    await hopToCell(p, ...nx.cell, nx.climb ? 0.42 : 0.28);
+    if (other) await pushOnTop(other, Math.sign(nx.cell[0] - from[0]), nx.cell[0] !== from[0] ? 0 : Math.sign(nx.cell[1] - from[1]), p);
+    p.moved = !nx.climb;
+    if (nx.climb) log(`🪜 ${nameOf(p)} wchodzi na ${isTreasure(...p.cell) ? 'szczyt' : floorOf(...p.cell) + '. piętro'}.`, p.def.color);
+    renderPanel();
+    if (isTreasure(...p.cell)) return;
+  }
+}
+// cofanie po tym samym piętrze (przeciwnie do ruchu wskazówek zegara)
+async function pyrBack(p, n) {
+  for (let s = 0; s < n; s++) {
+    const c = prevCW(...p.cell);
+    if (lavaAt(...c)) break;
+    await hopToCell(p, ...c);
+    renderPanel();
+  }
+  p.trail = []; p.moved = true;
+}
+// gracz cofa się (lawa spada na jego pole) – na tym samym piętrze, przeciwnie do ruchu
+async function stepBackFromLava(p) {
+  let c = p.cell;
+  for (let g = 0; g < 40; g++) { c = prevCW(...c); if (!lavaAt(...c)) break; }
+  log(`🔥 Lawa leci na ${nameOf(p)} – cofa się o pole!`, '#ffa060');
+  await hopToCell(p, ...c);
+  p.trail = []; p.moved = true;
+}
+
+async function resolvePyrField(p) {
+  for (let chain = 0; chain < 6; chain++) {
+    if (isTreasure(...p.cell)) return false;
+    const c = pyrCells[p.at];
+    const here = p.at;
+    if (isMove(c.type)) {
+      const n = parseInt(c.type, 10);
+      if (n > 0) { log(`🟢 ${nameOf(p)} idzie ${n} do przodu.`, '#7de08f'); bigToast(c.type, '#5ee07a'); await wait(0.3); await pyrForward(p, n); }
+      else { log(`🔴 ${nameOf(p)} cofa się o ${-n}.`, '#ff8080'); bigToast(c.type, '#ff6060'); await wait(0.3); await pyrBack(p, -n); }
+      if (p.at === here) return false;
+      continue;
+    }
+    if (c.type === 'P') { log(`🟣 ${nameOf(p)} rzuca jeszcze raz!`, '#d59cff'); bigToast('DODATKOWY RZUT!', '#d08cff'); return true; }
+    if (c.type === 'Q') {
+      const n = Math.floor(Math.random() * 11) - 5;      // od -5 do +5, może być 0
+      log(`❓ ${nameOf(p)} losuje: ${n > 0 ? '+' + n : n}${n === 0 ? ' – zostaje w miejscu' : ''}.`, '#f2c94c');
+      bigToast(`? ${n > 0 ? '+' + n : n}`, '#f2c94c');
+      await wait(0.4);
+      if (n === 0) return false;
+      if (n > 0) await pyrForward(p, n); else await pyrBack(p, -n);
+      if (p.at === here) return false;
+      continue;
+    }
+    return false;
+  }
+  return false;
+}
+
+// Pływanie: gracz płynie w tle do drabinki w najbliższym rogu; jego tury są pomijane automatycznie
+function updateSwimmers(dt, t) {
+  for (const p of players) {
+    if (!p.swimming) continue;
+    p.swimProg = Math.min(p.swimGoal, p.swimProg + dt * 0.18);
+    const a = p.swimFrom, b = ladders[p.swimCorner].bottom;
+    p.x = a.x + (b.x - a.x) * p.swimProg; p.z = a.z + (b.z - a.z) * p.swimProg;
+    p.y = -0.55 + Math.sin(t * 5) * 0.05;
+    p.facing = Math.atan2(b.x - a.x, b.z - a.z);
+    if (p.swimProg >= 1 && !p.climbing) climbLadder(p);
+  }
+}
+async function climbLadder(p) {
+  p.climbing = true;
+  const L = ladders[p.swimCorner], corner = cellPos(...CORNERS[p.swimCorner]);
+  p.swimming = false;
+  await tween(1.2, k => { p.x = L.bottom.x + (L.top.x - L.bottom.x) * k; p.z = L.bottom.z + (L.top.z - L.bottom.z) * k; p.y = L.bottom.y + (L.top.y - L.bottom.y) * k; });
+  await tween(0.35, k => { p.x = L.top.x + (corner.x - L.top.x) * k; p.z = L.top.z + (corner.z - L.top.z) * k; p.y = L.top.y + (corner.y - L.top.y) * k; });
+  p.x = corner.x; p.y = corner.y; p.z = corner.z;
+  p.climbing = false; p.anim = false;
+  log(`🪜 ${nameOf(p)} wychodzi po drabince na ${CORNER_NAMES[p.swimCorner]} róg.`, p.def.color);
+  renderPanel();
+  if (p.swimDone) { p.swimDone(); p.swimDone = null; }
+}
+// tura gracza w wodzie: pomijana od razu, pływak płynie dalej
+async function skipSwimTurn(p) {
+  if (p.inShark) {                                   // w paszczy rekina – tura stracona, potem wyplucie
+    p.sharkHold--;
+    log(`🦈 ${nameOf(p)} siedzi w paszczy rekina (traci turę).`, '#ff9a9a');
+    if (p.sharkHold <= 0) sharkSpit(p);
+    renderPanel();
+    await wait(0.8);
+    await endTurn(p, false, false);
+    return;
+  }
+  p.swim--;
+  p.swimGoal = Math.min(1, (p.swimTotal - p.swim) / p.swimTotal);
+  if (p.swim > 0) log(`🏊 ${nameOf(p)} płynie do drabinki (traci turę, zostało ${p.swim}).`, p.def.color);
+  else {
+    log(`🏊 ${nameOf(p)} dopływa do drabinki (traci turę).`, p.def.color);
+    // logicznie już stoi w rogu; animacja wspinaczki dokończy się w tle
+    setPyrCell(p, ...CORNERS[p.swimCorner]); p.trail = []; p.moved = false;
+    p.waitSwim = new Promise(r => p.swimDone = r);
+  }
+  renderPanel();
+  await wait(0.8);
+  await endTurn(p, false, false);
+}
+
+function fallIntoPyrWater(p, i, j) {
+  // odległość do najbliższego rogu wzdłuż brzegu → 1 albo 2 tury pływania
+  const dists = Object.entries(CORNERS).map(([n, [ci, cj]]) => [n, Math.abs(ci - i) + Math.abs(cj - j)]).sort((a, b) => a[1] - b[1]);
+  p.swimCorner = dists[0][0];
+  p.swim = dists[0][1] <= 3 ? 1 : 2;
+  p.at = 'water'; p.cell = null; p.trail = [];
+  p.swimTotal = p.swim; p.swimming = true; p.anim = true;
+  p.swimFrom = new THREE.Vector3(p.x, -0.55, p.z); p.swimProg = 0; p.swimGoal = 0.35;
+  log(`🌊 ${nameOf(p)} wpada do wody! Płynie do drabinki w rogu – traci ${p.swim} ${p.swim === 1 ? 'turę' : 'tury'}.`, '#7fc8ff');
+  bigToast('DO WODY!', '#7fc8ff');
+}
+
+// ---------- koniec rundy na piramidzie: tłoki, spływ lawy, wybuch wulkanów ----------
+async function pyramidRoundEnd() {
+  const onPyr = players.filter(p => p.state === 'pyr');
+  if (!onPyr.length && !lavas.length) return;
+  // 1. tłoki
+  const hit = onPyr.filter(p => p.cell && pistonAt.has(p.at) && !frozen.has(p.at));
+  for (const p of onPyr) if (p.cell && frozen.has(p.at)) log(`❄️ Zamrożony tłok nie spycha ${nameOf(p)}.`, '#9fe6ff');
+  const live = pistons.filter(ps => !frozen.has(ps.k));
+  if (onPyr.length) {
+    await tween(0.25, k => live.forEach(ps => ps.mesh.position.copy(ps.home).addScaledVector(ps.dir, k * PC * 0.55)));
+    for (const p of hit) {
+      const out = outward(...p.cell);
+      const from = new THREE.Vector3(p.x, p.y, p.z);
+      log(`⚙️ Tłok spycha ${nameOf(p)} piętro niżej!`, '#ffd166');
+      bigToast('TŁOK!', '#ffd166');
+      if (out) {
+        const to = cellPos(...out);
+        p.anim = true;
+        await tween(0.45, k => { p.x = from.x + (to.x - from.x) * k; p.z = from.z + (to.z - from.z) * k; p.y = from.y + (to.y - from.y) * k + Math.sin(k * Math.PI) * 0.6; });
+        p.anim = false;
+        setPyrCell(p, ...out); p.y = to.y; p.trail = []; p.moved = true;
+        if (lavaAt(...out)) await stepBackFromLava(p);
+      } else if (trampUnder(...p.cell)) {
+        await trampBounce(p, from);                    // trampolina wybija na piętro 1–3
+      } else {
+        const wx = from.x + (p.cell[0] === 0 ? -2.2 : p.cell[0] === PN - 1 ? 2.2 : 0), wz = from.z + (p.cell[1] === 0 ? -2.2 : p.cell[1] === PN - 1 ? 2.2 : 0);
+        const [ci, cj] = p.cell;
+        p.anim = true;
+        await tween(0.55, k => { p.x = from.x + (wx - from.x) * k; p.z = from.z + (wz - from.z) * k; p.y = from.y + (-0.3 - from.y) * k + Math.sin(k * Math.PI) * 0.6; });
+        p.anim = false;
+        addSplash(wx, wz);
+        fallIntoPyrWater(p, ci, cj);
+        if (shark.wall === wallOfCell(ci, cj)) await sharkCatch(p, wx, wz);   // rekin przy tej ścianie
+      }
+      renderPanel();
+    }
+    await tween(0.3, k => live.forEach(ps => ps.mesh.position.copy(ps.home).addScaledVector(ps.dir, (1 - k) * PC * 0.55)));
+  }
+  unfreezeAll();
+  // 2. rekin płynie pod następną ścianę, trampolina przesuwa się o pole
+  if (onPyr.length) { moveSharkNextWall(); await moveTramp(); }
+  // 3. kolejne wybuchy co 2 × liczba graczy rund (2 graczy → co 4 rundy, 3 → co 6, 4 → co 8)
+  if (onPyr.length) volcanoTimer++;
+  if (onPyr.length && volcanoTimer >= eruptionEvery()) await erupt();
+  renderPanel();
+}
+
+// Wybuch: strzelają wszystkie 4 wulkany, każdy na swoją ćwiartkę piramidy
+async function erupt() {
+  volcanoTimer = 0;
+  const onPyr = players.filter(p => p.state === 'pyr');
+  for (const [name, [ci, cj]] of Object.entries(CORNERS)) {
+    const left = ci === 0, top = cj === 0;
+    const free = Object.values(pyrCells).filter(c => floorOf(c.i, c.j) >= 2 && !lavaAt(c.i, c.j) && (c.i < PMID) === left && (c.j < PMID) === top);
+    if (!free.length) continue;
+    const c = free[Math.floor(Math.random() * free.length)];
+    const v = volcanoes[name];
+    const mesh = new THREE.Mesh(lavaGeo, lavaMat);
+    mesh.scale.set(0.9, 0.5, 0.9);
+    pyrGroup.add(mesh);
+    const to = cellPos(c.i, c.j, 0.15), from = v.top;
+    emberBurst(v);
+    await tween(0.9, k => mesh.position.set(from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k + Math.sin(k * Math.PI) * 7, from.z + (to.z - from.z) * k));
+    const st = { cells: [], inWater: false };
+    const cellObj = { i: c.i, j: c.j, mesh, stream: st };
+    st.cells.push(cellObj); streams.push(st); lavas.push(cellObj);
+    for (const p of onPyr) if (p.cell && p.cell[0] === c.i && p.cell[1] === c.j) await stepBackFromLava(p);
+  }
+  log(`🌋 Wszystkie 4 wulkany wybuchają! Lawa spada na piramidę.`, '#ff9a5a');
+  bigToast('WYBUCH!', '#ff7a2a');
+  renderPanel();
+}
+
+// Lawa spływa przy każdym rzucie kostką: strumień wydłuża się o pole piętro niżej;
+// gdy dojdzie do wody, z góry ubywa po jednym polu, aż strumień zniknie.
+async function lavaTick() {
+  if (!streams.length) return;
+  const onPyr = players.filter(p => p.state === 'pyr' && p.cell);
+  for (const st of [...streams]) {
+    if (!st.inWater) {
+      const head = st.cells[st.cells.length - 1];
+      const out = outward(head.i, head.j);
+      if (out) {
+        const mesh = new THREE.Mesh(lavaGeo, lavaMat);
+        mesh.scale.set(0.9, 0.5, 0.9);
+        const from = head.mesh.position.clone(), to = cellPos(...out, 0.15);
+        mesh.position.copy(from);
+        pyrGroup.add(mesh);
+        await tween(0.3, k => mesh.position.set(from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k + Math.sin(k * Math.PI) * 0.25, from.z + (to.z - from.z) * k));
+        const c = { i: out[0], j: out[1], mesh, stream: st };
+        // świecąca struga łącząca z polem wyżej
+        const len = from.distanceTo(to);
+        const link = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, len, 8), lavaMat);
+        link.position.copy(from).add(to).multiplyScalar(0.5);
+        link.lookAt(to); link.rotateX(Math.PI / 2);
+        pyrGroup.add(link);
+        c.link = link;
+        st.cells.push(c); lavas.push(c);
+        for (const p of onPyr) if (p.cell[0] === c.i && p.cell[1] === c.j) await stepBackFromLava(p);
+        continue;
+      }
+      st.inWater = true;           // czoło strumienia wpadło do wody
+      addSplash(head.mesh.position.x + (head.i === 0 ? -1 : head.i === PN - 1 ? 1 : 0), head.mesh.position.z + (head.j === 0 ? -1 : head.j === PN - 1 ? 1 : 0));
+    }
+    // ubywa górnego pola strumienia
+    const top = st.cells.shift();
+    if (top) {
+      const from = top.mesh.position.clone();
+      await tween(0.25, k => top.mesh.scale.set(0.9 * (1 - k), 0.5 * (1 - k), 0.9 * (1 - k)));
+      pyrGroup.remove(top.mesh);
+      if (top.link) pyrGroup.remove(top.link);
+      if (st.cells[0] && st.cells[0].link) { pyrGroup.remove(st.cells[0].link); st.cells[0].link = null; }
+      lavas.splice(lavas.indexOf(top), 1);
+    }
+    if (!st.cells.length) streams.splice(streams.indexOf(st), 1);
+  }
+}
+
+// ============================================================
+// SKLEP, MONETY, PRZEDMIOTY
+// ============================================================
+// strefa bezpieczna na wyspie (nikt tu nikogo nie uderzy) ze sklepem
+const SAFE = { x: 0, z: -5.4, r: 2.4 };
+const inSafe = p => Math.hypot(p.x - SAFE.x, p.z - SAFE.z) < SAFE.r;
+const SHOP = [
+  { id: 'wood', icon: '🪵', name: 'Łopata drewniana', price: 40, desc: '2 użycia' },
+  { id: 'iron', icon: '⛏️', name: 'Łopata żelazna', price: 100, desc: '5 użyć' },
+  { id: 'freeze', icon: '❄️', name: 'Zamrażacz tłoków', price: 35, desc: 'tłok stoi 1 rundę' },
+  { id: 'water', icon: '💧', name: 'Pistolet na lawę', price: 35, desc: 'gasi lawę' }
+];
+SHOP.forEach((it, n) => { it.x = SAFE.x - 1.65 + n * 1.1; it.z = SAFE.z - 0.75; });
+function spriteLabel(lines, w = 1.6) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(12,22,38,.82)';
+  g.beginPath(); g.roundRect ? g.roundRect(8, 40, 240, 176, 28) : g.rect(8, 40, 240, 176); g.fill();
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  lines.forEach(([txt, size, color], n) => { g.font = `800 ${size}px Segoe UI, Segoe UI Emoji, sans-serif`; g.fillStyle = color; g.fillText(txt, 128, 86 + n * 52); });
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = MAX_ANISO;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+  s.scale.set(w, w, 1);
+  return s;
+}
+{
+  // zielone koło strefy bezpiecznej
+  const ring = new THREE.Mesh(new THREE.RingGeometry(SAFE.r - 0.12, SAFE.r, 48), new THREE.MeshBasicMaterial({ color: '#5cff9a', transparent: true, opacity: 0.75 }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(SAFE.x, 0.03, SAFE.z);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(SAFE.r - 0.12, 48), new THREE.MeshBasicMaterial({ color: '#5cff9a', transparent: true, opacity: 0.13 }));
+  disc.rotation.x = -Math.PI / 2; disc.position.set(SAFE.x, 0.025, SAFE.z);
+  scene.add(ring, disc);
+  // stragan: lada z daszkiem w paski (po stronie wyspy, żeby nie zasłaniał pól z towarem)
+  const stall = new THREE.Group();
+  const wood = std('#9a6a3c'), cz = SAFE.z + 1.35;
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.9, 0.6), wood);
+  counter.position.set(SAFE.x, 0.45, cz); counter.castShadow = true;
+  stall.add(counter);
+  for (const sx of [-1.7, 1.7]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.2, 6), wood);
+    post.position.set(SAFE.x + sx, 1.1, cz + 0.2); stall.add(post);
+  }
+  for (let k = 0; k < 6; k++) {
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.08, 1.2), std(k % 2 ? '#ffffff' : '#e8463c'));
+    stripe.position.set(SAFE.x - 1.55 + k * 0.62, 2.25, cz - 0.1); stripe.rotation.x = -0.25; stall.add(stripe);
+  }
+  scene.add(stall);
+  for (const sx of [-1.2, 0, 1.2]) obstacles.push({ x: SAFE.x + sx, z: cz, r: 0.55 });
+  const sign = spriteLabel([['🛒 SKLEP', 52, '#ffe066'], ['strefa bezpieczna', 26, '#9dffc0'], ['stań na polu + atak', 26, '#d6dbf7']], 2.2);
+  sign.position.set(SAFE.x, 3.3, cz); scene.add(sign);
+  // pola z towarem
+  for (const it of SHOP) {
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.08, 24), std('#ffd166', { roughness: 0.5 }));
+    pad.position.set(it.x, 0.04, it.z); pad.receiveShadow = true;
+    scene.add(pad);
+    const lab = spriteLabel([[it.icon, 64, '#ffffff'], [`${it.price} 💰`, 40, '#ffe066'], [it.desc, 26, '#d6dbf7']], 1.15);
+    lab.position.set(it.x, 1.25, it.z); scene.add(lab);
+    it.pad = pad; it.lab = lab;
+  }
+}
+const shopItemAt = p => SHOP.find(it => Math.hypot(p.x - it.x, p.z - it.z) < 0.5);
+function buyItem(p, it) {
+  if ((p.coins || 0) < it.price) {
+    log(`💰 ${nameOf(p)}: za mało monet na „${it.name}” (${it.price}, masz ${p.coins || 0}).`, '#ff9a9a');
+    return;
+  }
+  p.coins -= it.price;
+  if (it.id === 'wood') p.woodUses = (p.woodUses || 0) + 2;
+  if (it.id === 'iron') p.ironUses = (p.ironUses || 0) + 5;
+  if (it.id === 'freeze') p.freeze = (p.freeze || 0) + 1;
+  if (it.id === 'water') p.water = (p.water || 0) + 1;
+  log(`🛒 ${nameOf(p)} kupuje: ${it.icon} ${it.name} (zostało ${p.coins} 💰).`, p.def.color);
+  it.pad.scale.set(1.15, 1, 1.15); setTimeout(() => it.pad.scale.set(1, 1, 1), 180);
+  renderPanel();
+}
+const shovelUses = p => (p.woodUses || 0) + (p.ironUses || 0);
+function useShovel(p) { if (p.woodUses > 0) p.woodUses--; else p.ironUses--; renderPanel(); }
+function itemsText(p) {
+  const out = [`💰${p.coins || 0}`];
+  if (p.woodUses) out.push(`🪵${p.woodUses}`);
+  if (p.ironUses) out.push(`⛏️${p.ironUses}`);
+  if (p.freeze) out.push(`❄️${p.freeze}`);
+  if (p.water) out.push(`💧${p.water}`);
+  return out.join(' ');
+}
+// okienko z dwiema opcjami (klawisz lewo / prawo albo kliknięcie)
+function askTwo(p, title, a, b) {
+  const el = document.getElementById('choiceBox');
+  el.innerHTML = `<div style="color:${p.def.color};font-weight:800">${title}</div>
+    <div class="cbtns"><button data-c="a">${a}<br><small>[${keyName(p.def.keys.left[0])}]</small></button>
+    <button data-c="b">${b}<br><small>[${keyName(p.def.keys.right[0])}]</small></button></div>`;
+  el.style.display = 'block';
+  return new Promise(res => {
+    const prev = eight.phase;
+    eight.phase = 'choice';
+    eight.choice = {
+      player: p, timer: CHOICE_TIME,
+      options: [{ key: 'left', value: 'a' }, { key: 'right', value: 'b' }],
+      resolve: c => { eight.choice = null; eight.phase = prev === 'choice' ? 'moving' : prev; hideChoice(); res(c === 'a'); }
+    };
+    el.querySelectorAll('button').forEach(btn => btn.onclick = () => eight.choice && eight.choice.resolve(btn.dataset.c));
+  });
+}
+// koniec ósemki: 100 monet (powrót na wyspę do sklepu) albo wejście na piramidę
+async function teleportChoice(p) {
+  const coins = await askTwo(p, `${nameOf(p)}: koniec ósemki!`, '💰 Biorę 100 monet<br><small>wracam na wyspę</small>', '🔺 Idę na piramidę');
+  if (!coins) { await enterPyramid(p); return; }
+  p.coins = (p.coins || 0) + 100;
+  log(`💰 ${nameOf(p)} bierze 100 monet (ma ${p.coins}) i wraca na wyspę do sklepu.`, p.def.color);
+  bigToast('+100 💰', '#ffe066');
+  p.anim = true;
+  await tween(0.4, k => p.tscale = 1 - k);
+  Object.assign(p, { state: 'island', x: SAFE.x, z: SAFE.z + 0.2, y: 0, vx: 0, vz: 0, stun: 0, inv: 1.2, at: null, trail: [], checkpoint: false, topSeg: null, cell: null });
+  await tween(0.4, k => p.tscale = Math.max(0.01, k));
+  p.tscale = 1; p.anim = false;
+  renderPanel();
+}
+// łopata: kopanie od razu, bez czekania do następnej tury
+async function shovelDig(p) {
+  if (!shovelUses(p) || !p.cell || !isTop(p.cell) || dug.has(p.at)) return false;
+  const which = p.woodUses > 0 ? `🪵 drewnianą (${p.woodUses})` : `⛏️ żelazną (${p.ironUses})`;
+  const yes = await askTwo(p, `${nameOf(p)}: masz łopatę – kopiesz od razu?`, `Kopię łopatą<br><small>${which}</small>`, 'Nie teraz');
+  if (!yes) return false;
+  useShovel(p);
+  return digHere(p);
+}
+
+// ---------- zamrażacz tłoków ----------
+const frozen = new Set();
+const iceMat = std('#9fe6ff', { roughness: 0.15, metalness: 0.1, emissive: '#3aa8d8', emissiveIntensity: 0.35 });
+function setFrozenLook() {
+  for (const ps of pistons) {
+    if (!ps.mesh) continue;
+    if (!ps.origMat) ps.origMat = ps.mesh.material;
+    ps.mesh.material = frozen.has(ps.k) ? iceMat : ps.origMat;
+    const cell = pyrCells[ps.k];
+    if (cell && cell.mesh) { if (!cell.origMat) cell.origMat = cell.mesh.material; cell.mesh.material = frozen.has(ps.k) ? iceMat : cell.origMat; }
+  }
+}
+async function offerFreeze(p) {
+  if (p.state !== 'pyr' || !p.cell || !pistonAt.has(p.at) || frozen.has(p.at) || !(p.freeze > 0)) return;
+  const yes = await askTwo(p, `${nameOf(p)}: stoisz na tłoku – zamrażasz go? (masz ❄️${p.freeze})`, '❄️ Zamrażam', 'Nie');
+  if (!yes) return;
+  p.freeze--;
+  frozen.add(p.at);
+  setFrozenLook();
+  log(`❄️ ${nameOf(p)} zamraża tłok – w tej rundzie nikogo nie zepchnie.`, '#9fe6ff');
+  bigToast('ZAMROŻONY!', '#9fe6ff');
+  renderPanel();
+}
+function unfreezeAll() { if (!frozen.size) return; frozen.clear(); setFrozenLook(); log('❄️ Tłoki odmarzają.', '#9fe6ff'); }
+
+// ---------- pistolet na lawę ----------
+function removeLavaCell(c) {
+  const st = c.stream, idx = st.cells.indexOf(c);
+  pyrGroup.remove(c.mesh); if (c.link) pyrGroup.remove(c.link);
+  lavas.splice(lavas.indexOf(c), 1);
+  const after = st.cells.slice(idx + 1);
+  st.cells = st.cells.slice(0, idx);
+  if (after.length) {
+    if (after[0].link) { pyrGroup.remove(after[0].link); after[0].link = null; }
+    const st2 = { cells: after, inWater: st.inWater };
+    after.forEach(x => x.stream = st2);
+    streams.push(st2);
+    st.inWater = false;
+  }
+  if (!st.cells.length) streams.splice(streams.indexOf(st), 1);
+}
+const jetMat = new THREE.MeshBasicMaterial({ color: '#7fd4ff', transparent: true, opacity: 0.85 });
+const steamMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.6 });
+const jetGeo = new THREE.SphereGeometry(0.12, 8, 6);
+async function extinguish(p, cell) {
+  const c = lavaAt(...cell);
+  if (!c) return;
+  const from = new THREE.Vector3(p.x, p.y + 0.8, p.z), to = c.mesh.position.clone();
+  p.facing = Math.atan2(to.x - from.x, to.z - from.z);
+  log(`💧 ${nameOf(p)} gasi lawę pistoletem wodnym!`, '#7fd4ff');
+  bigToast('PSSSST!', '#7fd4ff');
+  const drops = [];
+  for (let n = 0; n < 10; n++) { const m = new THREE.Mesh(jetGeo, jetMat); m.visible = false; pyrGroup.add(m); drops.push(m); }
+  await tween(0.8, k => drops.forEach((m, n) => {
+    const t = Math.min(1, Math.max(0, k * 1.6 - n * 0.06));
+    m.visible = t > 0 && t < 1;
+    m.position.set(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t + Math.sin(t * Math.PI) * 0.6, from.z + (to.z - from.z) * t);
+  }));
+  drops.forEach(m => pyrGroup.remove(m));
+  const steam = [];
+  for (let n = 0; n < 6; n++) { const m = new THREE.Mesh(jetGeo, steamMat); m.position.copy(to); pyrGroup.add(m); steam.push([m, Math.random() - 0.5, Math.random() - 0.5]); }
+  const s0 = c.mesh.scale.clone();
+  await tween(0.6, k => {
+    c.mesh.scale.set(s0.x * (1 - k), s0.y * (1 - k), s0.z * (1 - k));
+    steam.forEach(([m, dx, dz]) => { m.position.set(to.x + dx * k, to.y + k * 1.6, to.z + dz * k); m.scale.setScalar(1 + k * 2); });
+    steamMat.opacity = 0.6 * (1 - k);
+  });
+  steam.forEach(([m]) => pyrGroup.remove(m)); steamMat.opacity = 0.6;
+  removeLavaCell(c);
+  p.water--;
+  renderPanel();
+}
+
+// ============================================================
+// BILARD Z KOSTKĄ (zamiast losowania)
+// ============================================================
+// stół 2 × 1, kostka jak bila; dziura = 12 pól, inaczej tyle oczek, ile pokaże kostka po zatrzymaniu
+// utrudnienia: tylko 2 losowe dziury są otwarte, mniejsze dziury, 3 przeszkody, krótka strzałka i drżenie kija
+const BIL = { W: 2, H: 1, R: 0.06, PR: 0.075, OR: 0.07, SINK_MAX: 1.5 };   // SINK_MAX: szybsza kostka przeskakuje nad dziurą
+const POCKETS = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]];
+const bil = { active: false, p: null, phase: 'idle', ang: 0, power: 0, pt: 0, x: 1, y: 0.5, vx: 0, vy: 0, face: 1, dist: 0, rot: 0, sink: 0, timer: 0, res: null, color: '#fff', after: 0, auto: false };
+const bilCanvas = document.getElementById('billiard');
+function billiardShot(p) {
+  if (globalThis.__instantDice) return Promise.resolve({ v: randDie(), auto: false });     // tryb testów
+  let x, y;
+  do { x = 0.35 + Math.random() * 1.3; y = 0.3 + Math.random() * 0.4; } while (POCKETS.some(([a, b]) => Math.hypot(a - x, b - y) < 0.3));
+  const open = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5).slice(0, 2).sort();
+  const obs = [];
+  for (let n = 0, tries = 0; n < 3 && tries < 200; tries++) {
+    const ox = 0.25 + Math.random() * 1.5, oy = 0.2 + Math.random() * 0.6;
+    if (Math.hypot(ox - x, oy - y) < 0.3 || POCKETS.some(([a, b]) => Math.hypot(a - ox, b - oy) < 0.28) || obs.some(([a, b]) => Math.hypot(a - ox, b - oy) < 0.3)) continue;
+    obs.push([ox, oy]); n++;
+  }
+  Object.assign(bil, { open, obs, shake: 0, skipT: 0, active: true, p, phase: 'aim', ang: Math.random() * Math.PI * 2, power: 0, pt: 0, x, y, vx: 0, vy: 0, face: 1 + Math.floor(Math.random() * 6), dist: 0, rot: Math.random(), sink: 0, timer: eight.timer, color: p.def.color, after: 0, auto: false });
+  eight.phase = 'billiard';
+  renderEightHud();
+  return new Promise(res => bil.res = res);
+}
+function shoot(power, auto) {
+  const sp = 0.6 + power * 3.0;
+  // im mocniej, tym bardziej kij drży – kierunek trochę losowy
+  const a = bil.ang + bil.shake + (Math.random() - 0.5) * (0.04 + power * 0.22);
+  bil.vx = Math.cos(a) * sp; bil.vy = Math.sin(a) * sp; bil.shake = 0;
+  bil.phase = 'roll'; bil.auto = auto;
+}
+function updateBilliard(dt) {
+  if (!bil.active) return;
+  const k = bil.p.def.keys;
+  if (bil.phase === 'aim' || bil.phase === 'charge') {
+    bil.timer -= dt; eight.timer = bil.timer;
+    if (anyDown(k.left)) bil.ang -= dt * 1.7;
+    if (anyDown(k.right)) bil.ang += dt * 1.7;
+    if (anyDown(k.up)) bil.ang -= dt * 0.35;          // góra/dół – dokładne celowanie
+    if (anyDown(k.down)) bil.ang += dt * 0.35;
+    if (bil.phase === 'aim' && anyPressed(k.hit)) { bil.phase = 'charge'; bil.pt = 0; }
+    if (bil.phase === 'charge') {
+      bil.pt += dt;
+      const u = (bil.pt / 0.9) % 2; bil.power = u < 1 ? u : 2 - u;
+      bil.shake = Math.sin(bil.pt * 23) * bil.power * 0.09 + Math.sin(bil.pt * 37) * bil.power * 0.05;
+      if (!anyDown(k.hit)) shoot(bil.power, false);
+    }
+    if (bil.timer <= 0 && bil.phase !== 'roll') { bil.ang += (Math.random() - 0.5) * 2; shoot(0.3 + Math.random() * 0.6, true); }
+    return;
+  }
+  if (bil.phase === 'roll') {
+    const steps = 4, h = dt / steps;
+    for (let s = 0; s < steps && bil.phase === 'roll'; s++) {
+      let sp = Math.hypot(bil.vx, bil.vy);
+      const nsp = Math.max(0, sp * Math.exp(-0.9 * h) - 0.35 * h);
+      if (sp > 0) { bil.vx *= nsp / sp; bil.vy *= nsp / sp; }
+      sp = nsp;
+      bil.x += bil.vx * h; bil.y += bil.vy * h;
+      bil.dist += sp * h; bil.rot += sp * h * 5;
+      while (bil.dist > 0.13) { bil.dist -= 0.13; let f; do { f = 1 + Math.floor(Math.random() * 6); } while (f === bil.face); bil.face = f; }
+      if (bil.open.some(n => Math.hypot(POCKETS[n][0] - bil.x, POCKETS[n][1] - bil.y) < BIL.PR)) {
+        if (sp <= BIL.SINK_MAX) { bil.phase = 'sink'; bil.sink = 0; break; }
+        bil.skipT = 1.2;                                 // za mocno – kostka przeskakuje nad dziurą
+      }
+      for (const [ox, oy] of bil.obs) {                  // odbicie od przeszkody
+        const dx = bil.x - ox, dy = bil.y - oy, d = Math.hypot(dx, dy), min = BIL.R + BIL.OR;
+        if (d < min && d > 1e-6) {
+          const nx = dx / d, ny = dy / d, vn = bil.vx * nx + bil.vy * ny;
+          bil.x = ox + nx * min; bil.y = oy + ny * min;
+          if (vn < 0) { bil.vx -= 1.85 * vn * nx; bil.vy -= 1.85 * vn * ny; }
+        }
+      }
+      const R = BIL.R;
+      if (bil.x < R) { bil.x = R; bil.vx = Math.abs(bil.vx) * 0.75; }
+      if (bil.x > BIL.W - R) { bil.x = BIL.W - R; bil.vx = -Math.abs(bil.vx) * 0.75; }
+      if (bil.y < R) { bil.y = R; bil.vy = Math.abs(bil.vy) * 0.75; }
+      if (bil.y > BIL.H - R) { bil.y = BIL.H - R; bil.vy = -Math.abs(bil.vy) * 0.75; }
+      if (sp < 0.03) { bil.phase = 'done'; bil.after = 0; }
+    }
+    bil.skipT = Math.max(0, (bil.skipT || 0) - dt);
+    return;
+  }
+  if (bil.phase === 'sink') {
+    bil.sink += dt * 2.5;
+    if (bil.sink >= 1) { bil.phase = 'done'; bil.after = 0; }
+    return;
+  }
+  if (bil.phase === 'done') {
+    bil.after += dt;
+    if (bil.after >= 0.7) {
+      const v = bil.sink >= 1 ? 12 : bil.face, res = bil.res;
+      bil.active = false; bil.res = null; bil.phase = 'idle';
+      eight.phase = 'moving';
+      res({ v, auto: bil.auto });
+    }
+  }
+}
+function bilState() {
+  const r2 = v => Math.round(v * 100) / 100;
+  return bil.active ? [r2(bil.x), r2(bil.y), r2(bil.ang + bil.shake), r2(bil.power), bil.face, r2(bil.rot), bil.phase, r2(bil.sink), bil.color, bil.open.join(''), bil.obs.map(o => o.map(r2)), r2(bil.skipT || 0)] : null;
+}
+const BIL_PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+function drawBilliard(s) {
+  if (!bilCanvas) return;
+  if (!s) { bilCanvas.style.display = 'none'; return; }
+  bilCanvas.style.display = 'block';
+  const [x, y, ang, power, face, rot, phase, sink, color, openStr, obs, skipT] = s;
+  const open = String(openStr || '').split('').map(Number);
+  const g = bilCanvas.getContext('2d'), M = 22, S = 200;
+  g.clearRect(0, 0, bilCanvas.width, bilCanvas.height);
+  g.fillStyle = '#6b3f1f'; g.beginPath(); g.roundRect ? g.roundRect(0, 0, 444, 244, 18) : g.rect(0, 0, 444, 244); g.fill();
+  g.fillStyle = '#1f8a4c'; g.fillRect(M, M, BIL.W * S, BIL.H * S);
+  g.strokeStyle = '#13693a'; g.lineWidth = 3; g.strokeRect(M, M, BIL.W * S, BIL.H * S);
+  POCKETS.forEach(([a, b], n) => {
+    const on = open.includes(n);
+    g.beginPath(); g.arc(M + a * S, M + b * S, BIL.PR * S, 0, Math.PI * 2);
+    g.fillStyle = on ? '#0b0b0f' : '#4a3424'; g.fill();          // zamknięta dziura = zatkana drewnem
+    if (on) { g.strokeStyle = '#ffd84a'; g.lineWidth = 3; g.stroke(); }
+    else { g.strokeStyle = '#2d1e14'; g.lineWidth = 2; g.beginPath(); g.moveTo(M + a * S - 8, M + b * S - 8); g.lineTo(M + a * S + 8, M + b * S + 8); g.moveTo(M + a * S + 8, M + b * S - 8); g.lineTo(M + a * S - 8, M + b * S + 8); g.stroke(); }
+  });
+  for (const [ox, oy] of obs || []) {
+    g.beginPath(); g.arc(M + ox * S, M + oy * S, BIL.OR * S, 0, Math.PI * 2);
+    g.fillStyle = '#c0392b'; g.fill(); g.strokeStyle = '#ffd1c9'; g.lineWidth = 2; g.stroke();
+  }
+  const cx = M + x * S, cy = M + y * S;
+  if (phase === 'aim' || phase === 'charge') {
+    g.setLineDash([6, 6]); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(ang) * 38, cy + Math.sin(ang) * 38); g.stroke(); g.setLineDash([]);
+    const back = 18 + power * 40;
+    g.strokeStyle = '#e8c48a'; g.lineWidth = 6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx - Math.cos(ang) * back, cy - Math.sin(ang) * back); g.lineTo(cx - Math.cos(ang) * (back + 150), cy - Math.sin(ang) * (back + 150)); g.stroke();
+    g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(M + 8, M + BIL.H * S - 18, 120, 10);
+    g.fillStyle = power > 0.8 ? '#ff5a5a' : power > 0.5 ? '#ffd166' : '#7de08f'; g.fillRect(M + 8, M + BIL.H * S - 18, 120 * power, 10);
+  }
+  const sc = phase === 'sink' || (phase === 'done' && sink >= 1) ? Math.max(0, 1 - sink) : 1;
+  if (sc > 0) {
+    const h = BIL.R * S * sc;
+    g.save(); g.translate(cx, cy); g.rotate(rot);
+    g.fillStyle = '#fbfaf5'; g.strokeStyle = color; g.lineWidth = 3;
+    g.beginPath(); g.roundRect ? g.roundRect(-h, -h, 2 * h, 2 * h, h * 0.3) : g.rect(-h, -h, 2 * h, 2 * h); g.fill(); g.stroke();
+    g.fillStyle = '#1c1c22';
+    for (const [u, w] of BIL_PIPS[face] || []) { g.beginPath(); g.arc(u * h * 0.5, w * h * 0.5, h * 0.17, 0, Math.PI * 2); g.fill(); }
+    g.restore();
+  }
+  if (skipT > 0 && phase === 'roll') {
+    g.font = '900 30px Segoe UI, sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#000'; g.fillStyle = '#ff7a5a';
+    g.strokeText('ZA MOCNO – PRZESKOCZYŁA!', 222, 60); g.fillText('ZA MOCNO – PRZESKOCZYŁA!', 222, 60);
+  }
+  if (phase === 'done' || (phase === 'sink' && sink > 0.5)) {
+    g.font = '900 40px Segoe UI, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#ffe066'; g.strokeStyle = '#000'; g.lineWidth = 5;
+    const txt = sink >= 1 || phase === 'sink' ? 'DZIURA! 12' : String(face);
+    g.strokeText(txt, 222, 132); g.fillText(txt, 222, 132);
+  }
+}
+
+// ---------- wejście na piramidę z teleportu ----------
+function askCorner(p) {
+  const opts = [['BL', 'left'], ['TR', 'right']];
+  const el = document.getElementById('choiceBox');
+  el.innerHTML = `<div style="color:${p.def.color};font-weight:800">${nameOf(p)}: wybierz róg piramidy</div>
+    <div class="cbtns">${opts.map(([c, k]) => `<button data-c="${c}">${CORNER_NAMES[c]}<br><small>[${keyName(p.def.keys[k][0])}]</small></button>`).join('')}</div>`;
+  el.style.display = 'block';
+  return new Promise(res => {
+    eight.phase = 'choice';
+    eight.choice = {
+      player: p, timer: CHOICE_TIME,
+      options: opts.map(([c, k]) => ({ key: k, value: c })),
+      resolve: c => { eight.choice = null; eight.phase = 'moving'; hideChoice(); res(c); }
+    };
+    el.querySelectorAll('button').forEach(b => b.onclick = () => eight.choice && eight.choice.resolve(b.dataset.c));
+  });
+}
+async function enterPyramid(p) {
+  const corner = await askCorner(p);
+  log(`🌀 ${nameOf(p)} teleportuje się na ${CORNER_NAMES[corner]} róg piramidy.`, p.def.color);
+  bigToast('TELEPORT!', '#7fe8ff');
+  p.anim = true;
+  await tween(0.4, k => p.tscale = 1 - k);
+  const [ci, cj] = CORNERS[corner];
+  const to = cellPos(ci, cj);
+  p.x = to.x; p.y = to.y; p.z = to.z;
+  p.state = 'pyr'; setPyrCell(p, ci, cj); p.trail = []; p.moved = false; p.swim = 0;
+  await tween(0.4, k => p.tscale = Math.max(0.01, k));
+  p.tscale = 1;
+  if (!pyrStarted) { pyrStarted = true; await erupt(); }      // pierwszy gracz na piramidzie → od razu wybuch
+  p.anim = false;
+  renderPanel();
+}
+
+function pyrStatus(p) {
+  if (p.inShark) return '🦈 w paszczy rekina';
+  if (p.at === 'water') return `🏊 w wodzie (${p.swim} ${p.swim === 1 ? 'tura' : 'tury'})`;
+  if (isTop(p.cell)) return '🏆 szczyt – szuka skarbu';
+  return `🔺 piramida · ${floorOf(...p.cell)}. piętro`;
+}
+
+function winGame(p) {
+  pyrWinner = p;
+  log(`🏆 ${nameOf(p)} zdobywa SKARB!`, p.def.color);
+  bigToast('SKARB!', '#ffd84a');
+  finish();
+}
+
+// ============================================================
+// REKIN i TRAMPOLINA w wodzie wokół piramidy
+// ============================================================
+// Ściany piramidy: 0 = północna (j = 0), 1 = wschodnia (i = max), 2 = południowa (j = max), 3 = zachodnia (i = 0)
+const WALL_NAMES = ['północną', 'wschodnią', 'południową', 'zachodnią'];
+function wallOfCell(i, j) {
+  if (j === 0) return 0;
+  if (i === PN - 1) return 1;
+  if (j === PN - 1) return 2;
+  return 3;
+}
+// punkt na obwodzie wokół piramidy: t ∈ [0, 4) – po jednej jednostce na ścianę (zgodnie z ruchem wskazówek zegara)
+function perimeterPoint(t, dist) {
+  t = ((t % 4) + 4) % 4;
+  const k = Math.floor(t), u = t - k, D = dist;
+  const pts = [[-D + 2 * D * u, -D], [D, -D + 2 * D * u], [D - 2 * D * u, D], [-D, D - 2 * D * u]];
+  return new THREE.Vector3(P0.x + pts[k][0], -0.35, P0.z + pts[k][1]);
+}
+
+// --- rekin
+const shark = { wall: 0, t: 0.5, mesh: null };
+{
+  const g = new THREE.Group();
+  const skin = std('#6f7f8f', { roughness: 0.45 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), skin);
+  body.scale.set(0.8, 0.55, 2.4); body.position.y = -0.25;
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 14, 10), std('#e6e9ee'));
+  belly.scale.set(0.75, 0.4, 2.2); belly.position.y = -0.42;
+  const fin = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.1, 4), skin);
+  fin.scale.set(0.35, 1, 1); fin.position.set(0, 0.45, -0.15); fin.rotation.x = -0.35;
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.9, 4), skin);
+  tail.scale.set(0.25, 1, 1); tail.position.set(0, 0.0, -1.85); tail.rotation.x = Math.PI / 2 + 0.6;
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), std('#111'));
+    eye.position.set(sx * 0.42, -0.1, 1.15);
+    g.add(eye);
+  }
+  g.add(body, belly, fin, tail);
+  scene.add(g);
+  shark.mesh = g; shark.tail = tail;
+}
+const SHARK_DIST = PN * PC / 2 + 3.2;
+function resetShark() { shark.wall = Math.floor(Math.random() * 4); shark.t = shark.wall + 0.5; shark.lunge = 0; }
+function updateShark(dt, time) {
+  // pływa tam i z powrotem wzdłuż „swojej” ściany; po zmianie ściany płynie dookoła do następnej
+  const target = shark.wall + 0.5 + Math.sin(time * 0.5) * 0.32;
+  let d = target - shark.t;
+  d = ((d % 4) + 6) % 4 - 2;                       // najkrótsza droga po obwodzie
+  shark.t += Math.sign(d) * Math.min(Math.abs(d), dt * 0.35);
+  const p = perimeterPoint(shark.t, SHARK_DIST), q = perimeterPoint(shark.t + Math.sign(d || 1) * 0.01, SHARK_DIST);
+  shark.mesh.position.copy(p);
+  shark.mesh.position.y = -0.3 + Math.sin(time * 2) * 0.05 + (shark.lunge || 0);
+  shark.mesh.rotation.y = Math.atan2(q.x - p.x, q.z - p.z);
+  shark.tail.rotation.y = Math.sin(time * 6) * 0.35;
+}
+// koniec rundy: rekin przenosi się pod następną ścianę
+function moveSharkNextWall() {
+  shark.wall = (shark.wall + 1) % 4;
+  log(`🦈 Rekin płynie pod ${WALL_NAMES[shark.wall]} ścianę piramidy.`, '#a9c4d8');
+}
+// gracz wpada do wody przy ścianie z rekinem → rekin go zjada i trzyma 1 turę
+async function sharkCatch(p, wx, wz) {
+  log(`🦈 Rekin łapie ${nameOf(p)}! Trzyma go przez 1 turę.`, '#ff9a9a');
+  bigToast('REKIN!', '#ff6b6b');
+  const from = shark.mesh.position.clone();
+  shark.t = Math.round((shark.t - 0.5) * 10) / 10;
+  await tween(0.5, k => { shark.mesh.position.set(from.x + (wx - from.x) * k, -0.3 + Math.sin(k * Math.PI) * 1.2, from.z + (wz - from.z) * k); shark.lunge = Math.sin(k * Math.PI) * 1.0; });
+  shark.lunge = 0;
+  p.inShark = true; p.swimming = false; p.sharkHold = 1;
+  renderPanel();
+}
+// po turze w paszczy rekin wypluwa gracza – dalej płynie do drabinki jak zwykle
+function sharkSpit(p) {
+  p.inShark = false;
+  const sp = shark.mesh.position;
+  p.x = sp.x; p.z = sp.z; p.y = -0.55;
+  // najbliższa drabinka od miejsca wyplucia
+  let best = null, bd = 1e9;
+  for (const [n, L] of Object.entries(ladders)) { const dd = Math.hypot(L.bottom.x - sp.x, L.bottom.z - sp.z); if (dd < bd) { bd = dd; best = n; } }
+  p.swimCorner = best;
+  p.swimFrom = new THREE.Vector3(p.x, -0.55, p.z); p.swimProg = 0; p.swimGoal = 0.35; p.swimming = true;
+  addSplash(p.x, p.z);
+  log(`🦈 Rekin wypluwa ${nameOf(p)} – płynie do drabinki.`, p.def.color);
+}
+
+// --- trampolina
+const ring0 = [];
+{ let c = [0, 0]; do { ring0.push(c); c = nextCW(...c); } while (!(c[0] === 0 && c[1] === 0)); }
+const tramp = { idx: 0, mesh: null };
+{
+  const g = new THREE.Group();
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.16, 10, 28), std('#2f6fe0', { roughness: 0.4 }));
+  frame.rotation.x = Math.PI / 2;
+  const mat = new THREE.Mesh(new THREE.CircleGeometry(0.85, 28), std('#1d1d24', { roughness: 0.8, side: THREE.DoubleSide }));
+  mat.rotation.x = -Math.PI / 2; mat.position.y = 0.05;
+  const float = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.22, 10, 28), std('#ff8a3d', { roughness: 0.5 }));
+  float.rotation.x = Math.PI / 2; float.position.y = -0.2;
+  for (let k = 0; k < 6; k++) {
+    const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3, 6), std('#d9d9e0', { metalness: 0.8, roughness: 0.3 }));
+    spring.position.set(Math.cos(k / 6 * Math.PI * 2) * 0.9, 0.05, Math.sin(k / 6 * Math.PI * 2) * 0.9);
+    g.add(spring);
+  }
+  g.add(frame, mat, float);
+  scene.add(g);
+  tramp.mesh = g;
+}
+// trampolina pływa w wodzie „pod” polem parteru o numerze idx
+function trampPos(idx) {
+  const [i, j] = ring0[((idx % ring0.length) + ring0.length) % ring0.length];
+  const c = cellPos(i, j);
+  const ox = i === 0 ? -1 : i === PN - 1 ? 1 : 0, oz = j === 0 ? -1 : j === PN - 1 ? 1 : 0;
+  return new THREE.Vector3(c.x + ox * PC * 1.15, -0.25, c.z + oz * PC * 1.15);
+}
+function resetTramp() { tramp.idx = Math.floor(Math.random() * ring0.length); tramp.mesh.position.copy(trampPos(tramp.idx)); }
+async function moveTramp() {
+  const from = tramp.mesh.position.clone();
+  tramp.idx = (tramp.idx + 1) % ring0.length;
+  const to = trampPos(tramp.idx);
+  await tween(0.4, k => tramp.mesh.position.set(from.x + (to.x - from.x) * k, -0.25, from.z + (to.z - from.z) * k));
+}
+const trampUnder = (i, j) => { const [ti, tj] = ring0[tramp.idx]; return ti === i && tj === j; };
+// zepchnięty prosto na trampolinę → wybity na losowe piętro 1–3, na losowe pole po tej samej stronie
+async function trampBounce(p, from) {
+  const wall = wallOfCell(...ring0[tramp.idx]);
+  const f = 1 + Math.floor(Math.random() * 3), r = f - 1, m = PN - 1 - r;
+  const side = [];
+  for (let a = r; a <= m; a++) side.push(wall === 0 ? [a, r] : wall === 1 ? [m, a] : wall === 2 ? [a, m] : [r, a]);
+  const free = side.filter(c => !lavaAt(...c) && !pistonAt.has(keyP(...c)));
+  const target = (free.length ? free : side)[Math.floor(Math.random() * (free.length ? free.length : side.length))];
+  log(`🤸 ${nameOf(p)} spada na trampolinę i wylatuje na ${f}. piętro!`, '#ffd166');
+  bigToast('TRAMPOLINA!', '#ffd166');
+  const tp = tramp.mesh.position.clone(), to = cellPos(...target);
+  p.anim = true;
+  await tween(0.45, k => { p.x = from.x + (tp.x - from.x) * k; p.z = from.z + (tp.z - from.z) * k; p.y = from.y + (tp.y + 0.2 - from.y) * k + Math.sin(k * Math.PI) * 0.5; });
+  await tween(0.25, k => tramp.mesh.scale.set(1, 1 - Math.sin(k * Math.PI) * 0.4, 1));
+  await tween(1.0, k => { p.x = tp.x + (to.x - tp.x) * k; p.z = tp.z + (to.z - tp.z) * k; p.y = tp.y + (to.y - tp.y) * k + Math.sin(k * Math.PI) * 9; p.facing += 0.3; });
+  p.anim = false;
+  p.x = to.x; p.y = to.y; p.z = to.z;
+  setPyrCell(p, ...target); p.trail = []; p.moved = true;
+  if (lavaAt(...target)) await stepBackFromLava(p);
+}
+
+// ============================================================
+// SZCZYT: 16 pól, pod jednym (nikt nie wie którym) leży skarb
+// ============================================================
+const TOP_CELLS = [];
+for (let i = 0; i < PN; i++) for (let j = 0; j < PN; j++) if (isTreasure(i, j)) TOP_CELLS.push([i, j]);
+const topTileMat = std('#e8cf8a', { roughness: 0.55 });
+const dugMat = std('#5a4228', { roughness: 0.95 });
+const reachMat = std('#9fe08f', { roughness: 0.5, emissive: '#2f7a2a', emissiveIntensity: 0.4 });
+const topTiles = {};
+for (const [i, j] of TOP_CELLS) {
+  const p = cellPos(i, j);
+  const m = new THREE.Mesh(pyrTileGeo, topTileMat);
+  m.position.set(p.x, p.y - 0.04, p.z);
+  m.receiveShadow = true;
+  pyrGroup.add(m);
+  const q = new THREE.Mesh(new THREE.PlaneGeometry(PC * 0.6, PC * 0.6), new THREE.MeshBasicMaterial({ map: pyrLabelTex('?'), transparent: true, opacity: 0.55 }));
+  q.rotation.x = -Math.PI / 2; q.position.set(p.x, p.y + 0.01, p.z);
+  pyrGroup.add(q); groundLabels.push(q);
+  topTiles[keyP(i, j)] = { m, q };
+}
+// kursor wyboru pola
+const topCursor = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.68, 4, 1, Math.PI / 4), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.95 }));
+topCursor.rotation.x = -Math.PI / 2; topCursor.visible = false;
+pyrGroup.add(topCursor);
+chest.visible = false;
+sparkle.visible = false;
+
+let treasureKey = null;
+const dug = new Set();
+function resetTop() {
+  const [ti, tj] = TOP_CELLS[Math.floor(Math.random() * TOP_CELLS.length)];
+  treasureKey = keyP(ti, tj);
+  dug.clear();
+  for (const t of Object.values(topTiles)) { t.m.material = topTileMat; t.q.visible = true; }
+  chest.visible = false; sparkle.visible = false;
+  topCursor.visible = false;
+}
+const isTop = cell => cell && isTreasure(...cell);
+const manhattan = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+
+// wybór pola w zasięgu rzutu: klawisze ruchu przesuwają kursor, klawisz ataku zatwierdza (albo klik w przycisk)
+function pickTopCell(p, v) {
+  const reach = TOP_CELLS.filter(c => { const d = manhattan(c, p.cell); return d >= 1 && d <= v; });
+  for (const c of reach) topTiles[keyP(...c)].m.material = dug.has(keyP(...c)) ? dugMat : reachMat;
+  let cur = reach.slice().sort((a, b) => manhattan(b, p.cell) - manhattan(a, p.cell))[0];
+  const show = () => { const pos = cellPos(...cur, 0.03); topCursor.position.copy(pos); topCursor.visible = true; };
+  show();
+  const el = document.getElementById('choiceBox');
+  el.innerHTML = `<div style="color:${p.def.color};font-weight:800">${nameOf(p)}: wybierz pole (zielone – w zasięgu ${v})</div>
+    <div style="font-size:13px;margin-top:6px">Kursor: ${keyName(p.def.keys.up[0])} ${keyName(p.def.keys.left[0])} ${keyName(p.def.keys.down[0])} ${keyName(p.def.keys.right[0])} · zatwierdź: <b>${p.def.hitLabel}</b></div>
+    <div class="cbtns"><button id="pickOk">✔ Staję tutaj</button></div>`;
+  el.style.display = 'block';
+  return new Promise(res => {
+    eight.phase = 'pick';
+    const done = () => {
+      eight.pick = null; eight.phase = 'moving';
+      for (const c of TOP_CELLS) topTiles[keyP(...c)].m.material = dug.has(keyP(...c)) ? dugMat : topTileMat;
+      topCursor.visible = false; hideChoice();
+      res(cur);
+    };
+    eight.pick = {
+      player: p, timer: CHOICE_TIME,
+      move: (di, dj) => {
+        // przesuń kursor na najbliższe pole w zasięgu w danym kierunku
+        const cands = reach.filter(c => (di ? Math.sign(c[0] - cur[0]) === di : Math.sign(c[1] - cur[1]) === dj));
+        if (!cands.length) return;
+        cands.sort((a, b) => manhattan(a, cur) - manhattan(b, cur));
+        cur = cands[0]; show();
+      },
+      confirm: done,
+      auto: () => { cur = reach[Math.floor(Math.random() * reach.length)]; done(); }
+    };
+    document.getElementById('pickOk').onclick = () => eight.pick && eight.pick.confirm();
+  });
+}
+function updatePick(dt) {
+  const pk = eight.pick;
+  if (!pk) return;
+  pk.timer -= dt;
+  const k = pk.player.def.keys;
+  if (anyPressed(k.up)) pk.move(0, -1);
+  else if (anyPressed(k.down)) pk.move(0, 1);
+  else if (anyPressed(k.left)) pk.move(-1, 0);
+  else if (anyPressed(k.right)) pk.move(1, 0);
+  else if (anyPressed(k.hit)) pk.confirm();
+  else if (pk.timer <= 0) pk.auto();
+  topCursor.material.opacity = 0.6 + Math.sin(performance.now() / 120) * 0.35;
+}
+
+// ruch po szczycie: krok po kroku (najpierw w poziomie, potem w pionie); wejście na gracza = spychanie
+async function walkTop(p, target) {
+  while (p.cell[0] !== target[0] || p.cell[1] !== target[1]) {
+    const di = Math.sign(target[0] - p.cell[0]), dj = di ? 0 : Math.sign(target[1] - p.cell[1]);
+    const nx = [p.cell[0] + di, p.cell[1] + dj];
+    const other = players.find(q => q !== p && q.state === 'pyr' && q.cell && q.cell[0] === nx[0] && q.cell[1] === nx[1]);
+    await hopToCell(p, ...nx);
+    if (other) await pushOnTop(other, di, dj, p);
+  }
+}
+async function pushOnTop(q, di, dj, by) {
+  const nx = [q.cell[0] + di, q.cell[1] + dj];
+  log(`💥 ${nameOf(by)} spycha ${nameOf(q)}!`, by.def.color);
+  bigToast('SPYCHANIE!', '#ffb36b');
+  if (isTreasure(...nx)) {
+    const blocker = players.find(o => o !== q && o.state === 'pyr' && o.cell && o.cell[0] === nx[0] && o.cell[1] === nx[1]);
+    await hopToCell(q, ...nx);
+    if (blocker) await pushOnTop(blocker, di, dj, q);
+  } else {
+    // spada ze szczytu na 5. piętro
+    await hopToCell(q, ...nx);
+    q.trail = []; q.moved = true;
+    log(`⬇️ ${nameOf(q)} spada ze szczytu na 5. piętro.`, '#ffb36b');
+    if (lavaAt(...nx)) await stepBackFromLava(q);
+  }
+  renderPanel();
+}
+
+// pytanie po staniu na polu: kopiesz czy nie?
+function askDig(p) {
+  const key = p.at;
+  if (dug.has(key)) { log(`${nameOf(p)} stoi na już wykopanym (pustym) polu.`, p.def.color); return Promise.resolve(false); }
+  const el = document.getElementById('choiceBox');
+  el.innerHTML = `<div style="color:${p.def.color};font-weight:800">${nameOf(p)}: kopiesz tutaj czy rzucasz?</div>
+    <div class="cbtns"><button data-c="dig">⛏ Kopię tutaj<br><small>[${keyName(p.def.keys.left[0])}]</small></button>
+    <button data-c="no">🎲 Rzucam i idę na inne pole<br><small>[${keyName(p.def.keys.right[0])}]</small></button></div>`;
+  el.style.display = 'block';
+  return new Promise(res => {
+    eight.phase = 'choice';
+    eight.choice = {
+      player: p, timer: CHOICE_TIME,
+      options: [{ key: 'left', value: 'dig' }, { key: 'right', value: 'no' }],
+      resolve: c => { eight.choice = null; eight.phase = 'moving'; hideChoice(); res(c === 'dig'); }
+    };
+    el.querySelectorAll('button').forEach(b => b.onclick = () => eight.choice && eight.choice.resolve(b.dataset.c));
+  });
+}
+// kopanie: zwraca true, jeśli znaleziono skarb
+async function digHere(p) {
+  const key = p.at, t = topTiles[key];
+  log(`⛏ ${nameOf(p)} kopie…`, p.def.color);
+  await tween(0.8, k => { p.y = cellPos(...p.cell).y + Math.abs(Math.sin(k * Math.PI * 4)) * 0.25; });
+  p.y = cellPos(...p.cell).y;
+  dug.add(key);
+  t.q.visible = false;
+  if (key === treasureKey) {
+    chest.position.copy(cellPos(...p.cell, 0.25));
+    chest.visible = true; sparkle.visible = true;
+    sparkle.position.copy(cellPos(...p.cell, 0.06));
+    p.x += 0.6;
+    return true;
+  }
+  t.m.material = dugMat;
+  log(`🕳️ Pusto! Pod tym polem nie ma skarbu.`, '#c2cbe8');
+  bigToast('PUSTO!', '#c2cbe8');
+  return false;
+}
+// po staniu na polu szczytu: pytanie i ewentualne kopanie; true = wygrana
+async function topLanding(p) {
+  if (await askDig(p)) return await digHere(p);
+  log(`${nameOf(p)} nie kopie – rzuci w następnej turze.`, p.def.color);
+  return false;
+}
+// tura na szczycie: najpierw wybór – kopać tutaj albo rzucić i przejść na inne pole (bez kopania w tej turze)
+async function topActionTurn(p) {
+  if (p.waitSwim) { await p.waitSwim; p.waitSwim = null; }
+  const dig = await askDig(p);
+  if (dig) {
+    if (await digHere(p)) { winGame(p); return; }
+    await endTurn(p, false, false);
+    return;
+  }
+  const { v } = await billiardShot(p);
+  p.rollAt = gameTime;
+  log(v === 12 ? `🎱 ${nameOf(p)} wbija kostkę do dziury – 12 pól!` : `🎱 ${nameOf(p)}: kostka pokazuje ${v}.`, p.def.color);
+  bigToast(String(v), p.def.color);
+  const target = await pickTopCell(p, v);
+  await walkTop(p, target);
+  renderPanel();
+  if (await shovelDig(p)) { winGame(p); return; }
+  log(`${nameOf(p)} staje na nowym polu – kopać może w następnej turze.`, p.def.color);
+  await endTurn(p, false, true);
+}
+// (dawna) tura na szczycie: rzut, wybór pola w zasięgu, ruch, pytanie o kopanie
+async function topTurn(p, v) {
+  const target = await pickTopCell(p, v);
+  await walkTop(p, target);
+  renderPanel();
+  return await topLanding(p);
+}
+
+// ============================================================
+// INTERFEJS
+// ============================================================
+function renderPanel() {
+  const st = { island: '🏝️ na wyspie', falling: '🌊 w wodzie', sailing: '⛵ płynie' };
+  document.getElementById('players').innerHTML = players.map(p => {
+    const s = p.state === 'eight' ? `🎲 ósemka · ${p.at === 'S' ? 'START' : p.at === 'M' ? 'środek' : p.at === 'T' ? 'TELEPORT' : (fieldsE[p.at].path[0] === 'T' ? 'górna pętla' : 'dolna pętla') + ', pole ' + fieldsE[p.at].k}`
+      : p.state === 'pyr' ? pyrStatus(p) : st[p.state];
+    return `<div class="pl"><span class="dot" style="background:${p.def.color}"></span><div><b>${p.def.name}</b><div class="keys">${p.def.label} · atak: ${p.def.hitLabel}</div><div class="keys">${itemsText(p)}</div></div><span class="st">${s}</span></div>`;
+  }).join('');
+}
+
+function log(text, color) {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.textContent = text;
+  if (color) d.style.color = color;
+  el.prepend(d);
+  while (el.children.length > 5) el.lastChild.remove();
+}
+
+function addSplash(x, z) {
+  netEvent({ e: 'splash', x, z });
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.45, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9 }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, -0.38, z);
+  scene.add(m);
+  splashes.push({ m, t: 0 });
+}
+
+function renderControlsTable() {
+  document.getElementById('ctrlTable').innerHTML = PLAYER_DEFS.slice(0, numPlayers).map(d =>
+    `<tr><td><b style="color:${d.color}">${d.name}</b></td><td>ruch: <b>${d.label}</b></td><td>atak: <b>${d.hitLabel}</b></td></tr>`
+  ).join('');
+}
+document.querySelectorAll('#choices button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#choices button').forEach(x => x.classList.remove('sel'));
+  b.classList.add('sel'); numPlayers = +b.dataset.n; renderControlsTable();
+});
+renderControlsTable();
+document.getElementById('startBtn').onclick = e => {
+  e.target.blur();
+  document.getElementById('startScreen').style.display = 'none';
+  newGame(numPlayers);
+};
+// TEST: pomija wyspę i ósemkę – wszyscy gracze startują na rogach piramidy
+document.getElementById('skipPyrBtn').onclick = e => {
+  e.target.blur();
+  document.getElementById('startScreen').style.display = 'none';
+  newGame(numPlayers);
+  players.forEach((p, n) => {
+    const [ci, cj] = CORNERS[ENTRY_CORNERS[n % 2]];
+    const pos = cellPos(ci, cj);
+    p.state = 'pyr'; setPyrCell(p, ci, cj);
+    p.x = pos.x; p.y = pos.y; p.z = pos.z;
+    p.trail = []; p.moved = false; p.swim = 0; p.mesh.visible = true;
+    eight.queue.push(p);
+  });
+  log('🔺 Tryb testowy: wszyscy startują na piramidzie.', '#ffd9a0');
+  renderPanel();
+  pyrStarted = true;
+  eight.phase = 'moving';
+  erupt().then(() => startTurn(0));                          // od razu pierwszy wybuch
+};
+document.getElementById('againBtn').onclick = e => {
+  e.target.blur();
+  if (net.mode === 'host') { netStartGame(); return; }
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('startScreen').style.display = 'flex';
+};
+
+const timerEl = document.getElementById('timer');
+const tmpV = new THREE.Vector3();
+// Widoki: wyspa i ósemka (podzielony ekran, gdy gra toczy się w obu miejscach)
+const camEight = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
+function getViews() {
+  const isl = players.some(p => ['island', 'falling', 'sailing'].includes(p.state));
+  const eig = players.some(p => ['eight', 'pyr'].includes(p.state));
+  if (isl && eig) return { island: { x: 0, w: 0.5 }, eight: { x: 0.5, w: 0.5 } };
+  if (eig) return { island: null, eight: { x: 0, w: 1 } };
+  return { island: { x: 0, w: 1 }, eight: null };
+}
+function placeLabel(el, pos, cam = camera, view = { x: 0, w: 1 }) {
+  if (!view) { el.style.visibility = 'hidden'; return; }
+  tmpV.copy(pos).project(cam);
+  el.style.visibility = tmpV.z < 1 ? 'visible' : 'hidden';
+  el.style.left = ((view.x + (tmpV.x + 1) / 2 * view.w) * innerWidth) + 'px';
+  el.style.top = ((1 - tmpV.y) / 2 * innerHeight) + 'px';
+}
+function setupCam(cam, view, kind) {
+  const w = view.w * innerWidth;
+  cam.aspect = w / innerHeight;
+  const far = cam.aspect < 1.1 ? 1.45 : 1;    // na wąskim widoku kamera odsuwa się
+  if (kind === 'island') { cam.position.set(0, 18 * far, 5 - 22 * far); cam.lookAt(0, 0, 5); }
+  else {
+    // kamera pokazuje planszę gracza, który ma ruch (płynne przejście ósemka ↔ piramida)
+    const cur = eightCurrent();
+    const wantPyr = net.mode === 'client' ? net.focusPyr : cur ? cur.state === 'pyr' : players.some(p => p.state === 'pyr') && !players.some(p => p.state === 'eight');
+    camFocus += ((wantPyr ? 1 : 0) - camFocus) * Math.min(1, camDt * 2.5);
+    const a = new THREE.Vector3(E.x, 41 * far, E.z + 26 * far), at = new THREE.Vector3(E.x, 0, E.z + 1.8);
+    const b = new THREE.Vector3(P0.x, HALL + 34 * far, P0.z + 37 * far), bt = new THREE.Vector3(P0.x, HALL + 2, P0.z);
+    const k = ease(camFocus);
+    const target = at.lerp(bt, k);
+    // obrót i przybliżenie myszą wokół środka planszy
+    const off = new THREE.Vector3().lerpVectors(a, b, k).sub(target);
+    const sph = new THREE.Spherical().setFromVector3(off);
+    sph.theta += orbit.yaw;
+    sph.phi = Math.min(1.35, Math.max(0.15, sph.phi + orbit.pitch));
+    sph.radius *= orbit.zoom;
+    cam.position.copy(target).add(new THREE.Vector3().setFromSpherical(sph));
+    cam.lookAt(target);
+    if (groundLabels.lastYaw !== orbit.yaw) { groundLabels.lastYaw = orbit.yaw; for (const l of groundLabels) l.rotation.z = orbit.yaw; }
+  }
+  cam.updateProjectionMatrix();
+}
+let camFocus = 0, camDt = 0.016, gameTime = 0;
+// piramida robi się półprzezroczysta, gdy kamera pokazuje ósemkę w hali pod nią
+let pyrMats = null, pyrFade = 1;
+function setPyrFade(a) {
+  if (!pyrMats) {
+    pyrMats = new Set([lavaMat, topTileMat, dugMat, reachMat]);
+    pyrGroup.traverse(o => { if (o.material) [].concat(o.material).forEach(m => pyrMats.add(m)); });
+    for (const m of pyrMats) { m.transparent = true; if (m.userData.baseOpacity === undefined) m.userData.baseOpacity = m.opacity; }
+    pyrFade = -1;
+  }
+  if (Math.abs(a - pyrFade) < 0.003) return;
+  pyrFade = a;
+  for (const m of pyrMats) { m.opacity = a * m.userData.baseOpacity; m.depthWrite = a > 0.97; }
+}
+// obracanie planszy myszą: przeciągnij = obrót, kółko = przybliżenie, dwuklik = widok domyślny
+const orbit = { yaw: 0, pitch: 0, zoom: 1, drag: null };
+function inBoardView(x) { const v = getViews().eight; return v && x >= v.x * innerWidth && x <= (v.x + v.w) * innerWidth; }
+renderer.domElement.addEventListener('pointerdown', e => { if (inBoardView(e.clientX)) orbit.drag = { x: e.clientX, y: e.clientY }; });
+addEventListener('pointerup', () => orbit.drag = null);
+addEventListener('pointermove', e => {
+  if (!orbit.drag) return;
+  orbit.yaw -= (e.clientX - orbit.drag.x) * 0.006;
+  orbit.pitch = Math.max(-0.9, Math.min(0.9, orbit.pitch - (e.clientY - orbit.drag.y) * 0.004));
+  orbit.drag = { x: e.clientX, y: e.clientY };
+});
+renderer.domElement.addEventListener('wheel', e => { if (inBoardView(e.clientX)) { e.preventDefault(); orbit.zoom = Math.max(0.5, Math.min(1.7, orbit.zoom * (1 + e.deltaY * 0.001))); } }, { passive: false });
+renderer.domElement.addEventListener('dblclick', e => { if (inBoardView(e.clientX)) { orbit.yaw = 0; orbit.pitch = 0; orbit.zoom = 1; } });
+const SLOT = [[0, 0], [-0.32, -0.32], [0.32, 0.32], [-0.32, 0.32], [0.32, -0.32]];
+
+// ============================================================
+// PĘTLA
+// ============================================================
+// ============================================================
+// GRA ONLINE (PeerJS) – gospodarz prowadzi grę, goście wysyłają klawisze i dostają stan świata
+// ============================================================
+const NET_PREFIX = 'skarb-piramidy-v1-';
+const net = { mode: 'local', peer: null, conns: [], hostConn: null, mySlot: 0, names: [], code: '', started: false, focusPyr: false, remoteDown: {}, lastSnap: 0, lastDom: 0, domCache: {}, lavaSig: '' };
+const $id = id => document.getElementById(id);
+const ACTIONS = ['up', 'down', 'left', 'right', 'hit'];
+const KEY_ACTION = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'hit', Enter: 'hit', NumpadEnter: 'hit' };
+const isOnline = () => net.mode !== 'local';
+
+// --- klawisze: online każdy steruje swoją postacią WASD albo strzałkami + Spacja/Enter
+function injectAction(slot, action, isDown) {
+  const def = PLAYER_DEFS[slot];
+  if (!def) return;
+  const code = def.keys[action][0];
+  if (isDown) { if (!down.has(code)) pressed.add(code); down.add(code); }
+  else down.delete(code);
+}
+function onNetKey(e, isDown) {
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') return false;
+  const a = KEY_ACTION[e.code];
+  if (!a) return true;
+  e.preventDefault();
+  if (net.mode === 'host') injectAction(net.mySlot, a, isDown);
+  else if (net.mode === 'client' && net.hostConn && net.hostConn.open) {
+    if (isDown && e.repeat) return true;
+    net.hostConn.send({ t: 'key', a, d: isDown ? 1 : 0 });
+  }
+  return true;
+}
+
+// --- połączenie
+function netPeerReady() {
+  if (typeof Peer === 'undefined') { $id('netMsg').textContent = 'Nie udało się załadować modułu online. Sprawdź internet.'; return false; }
+  return true;
+}
+function netName() {
+  const n = ($id('netNick').value || '').trim() || 'Gracz';
+  try { localStorage.setItem('skarbNick', n); } catch (e) {}
+  return n.slice(0, 12);
+}
+function netCode() {
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 5 }, () => A[Math.floor(Math.random() * A.length)]).join('');
+}
+function netBroadcast(msg) { net.conns.forEach(c => { if (c.open) c.send(msg); }); }
+function showNetLobby() {
+  $id('netMain').style.display = 'none';
+  $id('netLobby').style.display = 'block';
+  $id('netRoomCode').textContent = net.code;
+  $id('netBegin').style.display = net.mode === 'host' ? 'inline-block' : 'none';
+  $id('localPart').style.display = 'none';
+  $id('skipPyrBtn').style.display = 'none';
+}
+function renderNetLobby(names) {
+  $id('netList').innerHTML = names.map((n, i) => `<div><span class="dot" style="background:${PLAYER_DEFS[i].color}"></span>${n}${i === 0 ? ' 👑' : ''}${i === net.mySlot ? ' <small>(Ty)</small>' : ''}</div>`).join('')
+    + (names.length < 4 ? `<div style="opacity:.55">Czekam na graczy… (${names.length}/4)</div>` : '');
+  $id('netLobbyMsg').textContent = net.mode === 'host' ? (names.length < 2 ? 'Potrzeba co najmniej 2 graczy.' : 'Możesz zaczynać!') : 'Czekaj, aż gospodarz rozpocznie grę…';
+}
+
+// ---------- GOSPODARZ ----------
+function netHost() {
+  if (!netPeerReady()) return;
+  net.mode = 'host'; net.mySlot = 0; net.code = netCode(); net.names = [netName()]; net.conns = [];
+  $id('netMsg').textContent = 'Tworzę pokój…';
+  const peer = new Peer(NET_PREFIX + net.code);
+  net.peer = peer;
+  peer.on('open', () => { showNetLobby(); renderNetLobby(net.names); });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') { peer.destroy(); netHost(); }
+    else { $id('netMsg').textContent = 'Błąd połączenia: ' + e.type; $id('netLobbyMsg').textContent = 'Błąd połączenia: ' + e.type; }
+  });
+  peer.on('connection', conn => {
+    conn.on('data', d => netHostData(conn, d));
+    conn.on('close', () => netHostClose(conn));
+  });
+}
+function netHostData(conn, d) {
+  if (d.t === 'hello') {
+    if (net.started) return conn.send({ t: 'reject', why: 'Gra w tym pokoju już trwa.' });
+    if (net.names.length >= 4) return conn.send({ t: 'reject', why: 'Pokój jest pełny (4 graczy).' });
+    conn.slot = net.names.length;
+    net.names.push(String(d.name || 'Gracz').slice(0, 12));
+    net.conns.push(conn);
+    conn.send({ t: 'welcome', slot: conn.slot, code: net.code });
+    netBroadcast({ t: 'lobby', names: net.names }); renderNetLobby(net.names);
+  } else if (d.t === 'key') {
+    if (ACTIONS.includes(d.a)) injectAction(conn.slot, d.a, !!d.d);
+  } else if (d.t === 'click') {
+    // kliknięcie przycisku w okienku wyboru – tylko gracz, którego dotyczy wybór
+    const who = (eight.choice && eight.choice.player) || (eight.pick && eight.pick.player);
+    if (who && who.i === conn.slot) { const b = document.querySelectorAll('#choiceBox button')[d.i]; if (b) b.click(); }
+  }
+}
+function netHostClose(conn) {
+  if (!net.conns.includes(conn)) return;
+  net.conns = net.conns.filter(c => c !== conn);
+  if (!net.started) {
+    net.names.splice(conn.slot, 1);
+    net.conns.forEach((c, i) => { c.slot = i + 1; if (c.open) c.send({ t: 'welcome', slot: c.slot, code: net.code }); });
+    netBroadcast({ t: 'lobby', names: net.names }); renderNetLobby(net.names);
+  } else {
+    ACTIONS.forEach(a => injectAction(conn.slot, a, false));
+    log(`⚠ ${net.names[conn.slot]} rozłączył się.`, '#ff9a9a');
+  }
+}
+function netStartGame() {
+  if (net.names.length < 2) return;
+  net.started = true;
+  $id('startScreen').style.display = 'none';
+  $id('endScreen').style.display = 'none';
+  newGame(net.names.length);
+  applyNetNames(net.names);
+  netBroadcast({ t: 'start', names: net.names });
+  netBroadcast(netLayout());
+  net.domCache = {};
+}
+function applyNetNames(names) {
+  players.forEach((p, i) => {
+    p.def = Object.assign({}, PLAYER_DEFS[i], { name: names[i], label: 'WASD / strzałki', hitLabel: 'Spacja / Enter' });
+    p.tag.textContent = names[i];
+  });
+  renderPanel();
+}
+// układ planszy (losowany u gospodarza) – wysyłany na starcie
+function netLayout() {
+  const eightT = {}; for (const [k, g] of Object.entries(EIGHT_PATHS)) eightT[k] = g.types;
+  const pyrT = {}; for (const [k, c] of Object.entries(pyrCells)) pyrT[k] = c.type;
+  return { t: 'layout', eightT, pyrT, ti: plants.map(p => p.ti) };
+}
+// stan świata ~20 razy na sekundę
+function netSnapshot() {
+  const r2 = v => Math.round(v * 100) / 100;
+  const pk = pistons.length ? pistons[0].mesh.position.distanceTo(pistons[0].home) / (PC * 0.55) : 0;
+  return {
+    t: 's',
+    P: players.map(p => [r2(p.x), r2(p.y), r2(p.z), r2(p.facing), p.state, p.at || '', p.anim ? 1 : 0, p.swimming ? 1 : 0, r2(p.inv || 0), r2(p.swing || 0), r2(p.vx || 0), r2(p.vz || 0), r2(p.tscale ?? 1), r2(p.fallT || 0), p.inShark ? 1 : 0]),
+    SH: [r2(shark.mesh.position.x), r2(shark.mesh.position.y), r2(shark.mesh.position.z), r2(shark.mesh.rotation.y)],
+    TR: [r2(tramp.mesh.position.x), r2(tramp.mesh.position.z), r2(tramp.mesh.scale.y)],
+    B: [r2(boat.position.x), r2(boat.position.y), r2(boat.position.z), r2(boat.rotation.y), r2(boat.rotation.z), r2(boatMats[0] ? boatMats[0].opacity : 1), boatState.phase, r2(boatState.t)],
+    D: [r2(dice.position.x), r2(dice.position.y), r2(dice.position.z), r2(dice.quaternion.x), r2(dice.quaternion.y), r2(dice.quaternion.z), r2(dice.quaternion.w)],
+    TI: plants.map(p => p.ti).join(''),
+    S: streams.map(st => st.cells.map(c => [c.i, c.j])),
+    PK: r2(pk),
+    TT: TOP_CELLS.map(c => { const t = topTiles[keyP(...c)]; return (t.m.material === dugMat ? 'd' : t.m.material === reachMat ? 'r' : 't') + (t.q.visible ? '1' : '0'); }).join(','),
+    CH: chest.visible ? [r2(chest.position.x), r2(chest.position.y), r2(chest.position.z)] : null,
+    TC: topCursor.visible ? [r2(topCursor.position.x), r2(topCursor.position.y), r2(topCursor.position.z)] : null,
+    AR: arrowL.visible ? [r2(arrowL.position.x), r2(arrowL.position.y), r2(arrowL.position.z), r2(arrowR.position.x), r2(arrowR.position.y), r2(arrowR.position.z)] : null,
+    F: eightCurrent() ? (eightCurrent().state === 'pyr' ? 1 : 0) : (players.some(p => p.state === 'pyr') && !players.some(p => p.state === 'eight') ? 1 : 0),
+    BI: bilState(),
+    FZ: [...frozen].join(';')
+  };
+}
+// panele z napisami (lista graczy, tura, okienka wyboru, dziennik, duże napisy)
+const DOM_IDS = ['players', 'eightHud', 'choiceBox', 'log', 'toast'];
+function netDomSync() {
+  for (const id of DOM_IDS) {
+    const el = $id(id);
+    const st = { h: el.innerHTML, d: el.style.display, c: el.style.color, k: el.className };
+    const sig = st.h + '|' + st.d + '|' + st.c + '|' + st.k;
+    if (net.domCache[id] !== sig) { net.domCache[id] = sig; netBroadcast(Object.assign({ t: 'dom', id }, st)); }
+  }
+}
+function netHostTick(time) {
+  if (net.mode !== 'host' || !net.started || !net.conns.length) return;
+  if (time - net.lastSnap >= 0.05) { net.lastSnap = time; netBroadcast(netSnapshot()); }
+  if (time - net.lastDom >= 0.1) { net.lastDom = time; netDomSync(); }
+}
+function netEvent(ev) { if (net.mode === 'host' && net.started) netBroadcast(Object.assign({ t: 'ev' }, ev)); }
+
+// ---------- GOŚĆ ----------
+function netJoin() {
+  const code = ($id('netCodeIn').value || '').trim().toUpperCase();
+  if (code.length !== 5) { $id('netMsg').textContent = 'Wpisz 5-znakowy kod pokoju.'; return; }
+  if (!netPeerReady()) return;
+  net.mode = 'client'; net.code = code;
+  $id('netMsg').textContent = 'Łączę z pokojem…';
+  const peer = new Peer();
+  net.peer = peer;
+  peer.on('open', () => {
+    const conn = peer.connect(NET_PREFIX + code, { reliable: true });
+    net.hostConn = conn;
+    conn.on('open', () => conn.send({ t: 'hello', name: netName() }));
+    conn.on('data', netClientData);
+    conn.on('close', netHostGone);
+  });
+  peer.on('error', e => {
+    $id('netMsg').textContent = e.type === 'peer-unavailable' ? 'Nie ma pokoju o takim kodzie.' : 'Błąd połączenia: ' + e.type;
+    net.mode = 'local';
+  });
+}
+function netClientData(d) {
+  if (d.t === 'welcome') { net.mySlot = d.slot; showNetLobby(); }
+  else if (d.t === 'lobby') renderNetLobby(d.names);
+  else if (d.t === 'reject') { $id('netMsg').textContent = d.why; net.peer.destroy(); net.mode = 'local'; }
+  else if (d.t === 'start') {
+    $id('startScreen').style.display = 'none';
+    $id('endScreen').style.display = 'none';
+    newGame(d.names.length);
+    applyNetNames(d.names);
+    net.lavaSig = '';
+  }
+  else if (d.t === 'layout') {
+    for (const [k, types] of Object.entries(d.eightT)) EIGHT_PATHS[k].types = types;
+    paintEightFields();
+    for (const [k, t] of Object.entries(d.pyrT)) if (pyrCells[k]) pyrCells[k].type = t;
+    paintPyramidCells();
+    d.ti.forEach((v, i) => plants[i].ti = v); aimPlants();
+  }
+  else if (d.t === 's') netApplySnapshot(d);
+  else if (d.t === 'dom') {
+    const el = $id(d.id);
+    if (!el) return;
+    el.innerHTML = d.h; el.style.display = d.d; el.style.color = d.c; el.className = d.k;
+  }
+  else if (d.t === 'ev') {
+    if (d.e === 'splash') addSplash(d.x, d.z);
+    else if (d.e === 'embers' && volcanoes[d.v]) emberBurst(volcanoes[d.v]);
+    else if (d.e === 'end') {
+      $id('winTitle').textContent = d.title; $id('winTitle').style.color = d.color;
+      $id('againBtn').style.display = 'none';
+      $id('endScreen').style.display = 'flex';
+    }
+  }
+}
+function netApplySnapshot(s) {
+  s.P.forEach((a, i) => {
+    const p = players[i];
+    if (!p) return;
+    p.tx = a[0]; p.ty = a[1]; p.tz = a[2];
+    if (p.x === undefined || Math.hypot(p.x - a[0], p.z - a[2]) > 8) { p.x = a[0]; p.y = a[1]; p.z = a[2]; }   // duży skok = od razu
+    p.facing = a[3]; p.state = a[4]; p.at = a[5]; p.anim = !!a[6]; p.swimming = !!a[7];
+    p.inv = a[8]; p.swing = a[9]; p.vx = a[10]; p.vz = a[11]; p.tscale = a[12]; p.fallT = a[13]; p.inShark = !!a[14];
+  });
+  boat.position.set(s.B[0], s.B[1], s.B[2]); boat.rotation.set(0, s.B[3], s.B[4]); setBoatOpacity(s.B[5]);
+  if (s.SH) { shark.mesh.position.set(s.SH[0], s.SH[1], s.SH[2]); shark.mesh.rotation.y = s.SH[3]; shark.tail.rotation.y = Math.sin(performance.now() / 160) * 0.35; }
+  if (s.TR) { tramp.mesh.position.set(s.TR[0], -0.25, s.TR[1]); tramp.mesh.scale.set(1, s.TR[2], 1); }
+  boatState.phase = s.B[6]; boatState.t = s.B[7];
+  dice.position.set(s.D[0], s.D[1], s.D[2]); dice.quaternion.set(s.D[3], s.D[4], s.D[5], s.D[6]);
+  if (s.TI !== plants.map(p => p.ti).join('')) { s.TI.split('').forEach((v, i) => plants[i].ti = +v); aimPlants(); }
+  const sig = JSON.stringify(s.S);
+  if (sig !== net.lavaSig) { net.lavaSig = sig; netRebuildLava(s.S); }
+  const fz = new Set(s.FZ ? s.FZ.split(';') : []);
+  if ([...fz].join(';') !== [...frozen].join(';')) { frozen.clear(); fz.forEach(k => frozen.add(k)); setFrozenLook(); }
+  pistons.forEach(ps => ps.mesh.position.copy(ps.home).addScaledVector(ps.dir, frozen.has(ps.k) ? 0 : s.PK * PC * 0.55));
+  drawBilliard(s.BI);
+  s.TT.split(',').forEach((v, n) => {
+    const t = topTiles[keyP(...TOP_CELLS[n])];
+    t.m.material = v[0] === 'd' ? dugMat : v[0] === 'r' ? reachMat : topTileMat;
+    t.q.visible = v[1] === '1';
+  });
+  chest.visible = sparkle.visible = !!s.CH;
+  if (s.CH) { chest.position.set(...s.CH); sparkle.position.set(s.CH[0], s.CH[1] - 0.2, s.CH[2]); }
+  topCursor.visible = !!s.TC; if (s.TC) topCursor.position.set(...s.TC);
+  arrowL.visible = arrowR.visible = !!s.AR;
+  if (s.AR) { arrowL.position.set(s.AR[0], s.AR[1], s.AR[2]); arrowR.position.set(s.AR[3], s.AR[4], s.AR[5]); arrowL.rotation.y = Math.PI; arrowR.rotation.y = 0; }
+  net.focusPyr = !!s.F;
+}
+function netRebuildLava(S) {
+  lavas.forEach(l => { pyrGroup.remove(l.mesh); if (l.link) pyrGroup.remove(l.link); });
+  lavas = []; streams = [];
+  for (const cells of S) {
+    const st = { cells: [], inWater: false };
+    cells.forEach(([i, j], n) => {
+      const mesh = new THREE.Mesh(lavaGeo, lavaMat);
+      mesh.scale.set(0.9, 0.5, 0.9);
+      mesh.position.copy(cellPos(i, j, 0.15));
+      pyrGroup.add(mesh);
+      const c = { i, j, mesh, stream: st };
+      if (n > 0) {
+        const from = st.cells[n - 1].mesh.position, to = mesh.position;
+        const link = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, from.distanceTo(to), 8), lavaMat);
+        link.position.copy(from).add(to).multiplyScalar(0.5);
+        link.lookAt(to); link.rotateX(Math.PI / 2);
+        pyrGroup.add(link); c.link = link;
+      }
+      st.cells.push(c); lavas.push(c);
+    });
+    streams.push(st);
+  }
+}
+// płynny ruch postaci u gościa między kolejnymi paczkami stanu
+function netClientSmooth(dt) {
+  if (net.mode !== 'client') return;
+  const k = Math.min(1, dt * 14);
+  for (const p of players) if (p.tx !== undefined) { p.x += (p.tx - p.x) * k; p.y += (p.ty - p.y) * k; p.z += (p.tz - p.z) * k; }
+}
+function netHostGone() {
+  if (net.mode !== 'client') return;
+  $id('winTitle').textContent = 'Gospodarz opuścił grę';
+  $id('winTitle').style.color = '#ff9a9a';
+  $id('againBtn').style.display = 'none';
+  $id('endScreen').style.display = 'flex';
+}
+// kliknięcia w okienku wyboru u gościa → do gospodarza
+$id('choiceBox').addEventListener('click', e => {
+  if (net.mode !== 'client') return;
+  const b = e.target.closest('button');
+  if (!b) return;
+  const i = [...$id('choiceBox').querySelectorAll('button')].indexOf(b);
+  if (i >= 0 && net.hostConn) net.hostConn.send({ t: 'click', i });
+});
+// przyciski lobby
+try { $id('netNick').value = localStorage.getItem('skarbNick') || ''; } catch (e) {}
+$id('netHostBtn').onclick = e => { e.target.blur(); netHost(); };
+$id('netJoinBtn').onclick = e => { e.target.blur(); netJoin(); };
+// wybór jakości grafiki (zapamiętany; zmiana przeładowuje stronę)
+document.querySelectorAll('.qbtn').forEach(b => {
+  if (b.dataset.q === QUALITY) b.classList.add('on');
+  b.onclick = () => { if (b.dataset.q === QUALITY) return; try { localStorage.setItem('skarbQuality', b.dataset.q); } catch (e) {} location.reload(); };
+});
+$id('netCodeIn').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin(); });
+$id('netBegin').onclick = e => { e.target.blur(); netStartGame(); };
+$id('netLeave').onclick = () => location.reload();
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const time = clock.elapsedTime;
+  camDt = dt;
+  gameTime += dt;
+
+  if (running && net.mode !== 'client') { updatePlayers(dt); updateBoat(dt); updateEight(dt); }
+  netClientSmooth(dt);
+  updateTweens(dt);
+  if (net.mode !== 'client') { updateSwimmers(dt, time); updateShark(dt, time); }
+  netHostTick(gameTime);
+  pressed.clear();
+
+  const views = getViews();
+  if (views.island) setupCam(camera, views.island, 'island');
+  if (views.eight) setupCam(camEight, views.eight, 'eight');
+  const split = views.island && views.eight;
+  document.getElementById('divider').style.display = split ? 'block' : 'none';
+  document.getElementById('eightHud').style.display = views.eight ? 'block' : 'none';
+  const centerEight = views.eight ? (views.eight.x + views.eight.w / 2) * 100 + '%' : '75%';
+  document.getElementById('choiceBox').style.left = centerEight;
+  if (bilCanvas) bilCanvas.style.left = centerEight;
+  if (net.mode !== 'client') drawBilliard(bilState());
+  document.getElementById('toast').style.left = centerEight;
+
+  for (const p of players) {
+    const onEight = p.state === 'eight' || p.state === 'pyr';
+    let ox = 0, oz = 0;
+    if (onEight && !p.anim) {
+      const same = players.filter(q => (q.state === 'eight' || q.state === 'pyr') && !q.anim && q.at === p.at);
+      if (same.length > 1) { const sl = SLOT[same.indexOf(p) + 1] || [0, 0]; ox = sl[0]; oz = sl[1]; }
+    }
+    p.mesh.position.set(p.x + ox, p.y, p.z + oz);
+    p.mesh.scale.setScalar((onEight ? 0.8 : 1) * (p.tscale ?? 1));
+    p.mesh.rotation.y = p.facing;
+    p.mesh.rotation.x = p.swimming ? -1.25 : 0;               // pływa na brzuchu
+    const moving = Math.hypot(p.vx, p.vz) > 0.5 && p.state === 'island';
+    p.mesh.children[0].position.y = 0.62 + (moving ? Math.abs(Math.sin(time * 14)) * 0.06 : 0);
+    const arm = p.mesh.userData.arm;
+    if (p.swing > 0) { const k = 1 - p.swing / 0.28; arm.rotation.set(-0.2, 1.4 - k * 2.8, 0); }
+    else arm.rotation.set(-0.5, 0.5, 0);
+    p.mesh.visible = !p.inShark && !(p.inv > 0 && Math.floor(time * 12) % 2);
+    if (onEight) placeLabel(p.tag, tmpV.set(p.x + ox, p.y + 1.6, p.z + oz), camEight, views.eight);
+    else placeLabel(p.tag, tmpV.set(p.x, p.y + 1.9, p.z), camera, views.island);
+    p.tag.style.display = p.inShark ? 'none' : 'block';
+    p.tag.textContent = p.state === 'falling' ? '🌊 ' + Math.ceil(WATER_TIME - p.fallT) : 'P' + (p.i + 1);
+  }
+
+  if (running && boatState.phase === 'docked' && islandActive()) {
+    timerEl.style.display = 'block';
+    const s = Math.ceil(boatState.t);
+    timerEl.textContent = '⛵ ' + s;
+    timerEl.classList.toggle('hot', s <= 3);
+    placeLabel(timerEl, tmpV.set(BOAT_POS.x, 4.4, BOAT_POS.z + 1), camera, views.island);
+  } else timerEl.style.display = 'none';
+
+  // fale
+  if (water.material.uniforms) water.material.uniforms.time.value += dt * 0.5;
+  sail.scale.x = 1 + Math.sin(time * 2) * 0.03;
+
+  for (const s of [...splashes]) {
+    s.t += dt;
+    s.m.scale.setScalar(1 + s.t * 5);
+    s.m.material.opacity = Math.max(0, 0.9 - s.t * 1.2);
+    if (s.t > 0.8) { scene.remove(s.m); splashes.splice(splashes.indexOf(s), 1); }
+  }
+
+  renderer.setScissorTest(true);
+  for (const [kind, v] of Object.entries(views)) {
+    if (!v) continue;
+    const x = Math.round(v.x * innerWidth), w = Math.round(v.w * innerWidth);
+    renderer.setViewport(x, 0, w, innerHeight);
+    renderer.setScissor(x, 0, w, innerHeight);
+    setPyrFade(1);
+    renderer.render(scene, kind === 'island' ? camera : camEight);
+  }
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
